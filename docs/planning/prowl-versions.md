@@ -27,7 +27,7 @@
 - All future features (deep-dive, wiki, Grok, pi-remembers, loops, DSPy, web/cli adapters) are version 0.2+
 
 **SearXNG verification checklist (from curl test, 2026-07-14):**
-- [ ] Deploy SearXNG Docker container (configure `keep_only` engines per `search-scraper-setup.md` §13.3)
+- [ ] Deploy SearXNG Docker container (configure `keep_only` engines per [[search-scraper-setup]] §13.3)
 - [ ] Deploy Firecrawl Docker container
 - [ ] Verify Baidu operators: `site:`, `inurl:`, `intitle:`, `filetype:`, `"..."`, `-` (was CAPTCHA-blocked via curl)
 - [ ] Verify Yandex operators: `site:`, `mime:`, `lang:ru`, `date:YYYYMMDD`, `inurl:`, `intitle:`, `"..."`, `-` (was blocked via curl)
@@ -96,7 +96,7 @@ Add error handling through prompting, for when a site doesn't go through or some
 **DSPy analytics layer** — DSPy provides typed signatures for every model interaction, but more importantly it gives you a **live evaluation framework** to measure whether your query variations are actually working:
 
 - **UniqueGain tracking:** DSPy modules generate variations per stance/surface dimension, run them against SearXNG, judge relevance, and compute `UniqueGain(v)` per slot. You see which dimensions contribute unique results on *today's* engines in *today's* languages — not what a paper predicted.
-- **Variation optimization:** DSPy's `BootstrapFewShot` auto-tunes the few-shot bank in `query-variations.md` §8. Feed it topics, it generates variations, measures which patterns produce unique results, and keeps only the patterns that work. Dead dimensions get pruned automatically.
+- **Variation optimization:** DSPy's `BootstrapFewShot` auto-tunes the few-shot bank in [[query-variations]] §8. Feed it topics, it generates variations, measures which patterns produce unique results, and keeps only the patterns that work. Dead dimensions get pruned automatically.
 - **Dimension health dashboard:** Run the eval weekly. If a slot's UniqueGain drops to 0 for three consecutive weeks, the engine changed — you know to re-tune or drop it. This catches engine drift (Google deprecating operators, Baidu changing tokenization) without manual monitoring.
 - **Loop-catching with DSPy Assertions:** Assert that every variation produces at least 1 unique relevant result. If an entire dimension fails assertion for a topic, the planner auto-adjusts — redistributes effort to working dimensions instead of wasting queries.
 - **Model-agnostic:** The analytics pipeline runs the same regardless of whether you're using Qwen, Grok, or a local model. Switch models and the eval still works — you can compare which model produces better UniqueGain.

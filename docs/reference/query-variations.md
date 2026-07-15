@@ -1,4 +1,4 @@
-# query-variations.md — Per-engine × Per-language Variation Reference (Research-Gated)
+# [[query-variations]] — Per-engine × Per-language Variation Reference (Research-Gated)
 
 **Status:** Research-gated reference (Perplexity pass, 2026-07-13).
 **Scope:** focused on the **established 6** languages — ZH, RU, JA, KO, ES, PT — and their engines (Google, Bing, Yandex, Baidu, Sogou/Haosou, Naver). Planned languages (FR, DE, CS, PL, UK, AR, HI) are deferred — see PRD §7.5; they require operator discovery + corpus evidence before use.
@@ -154,7 +154,7 @@ Route by: language/script support, observed indexing of target domains, operator
 
 ### SearXNG verification needed (deferred from curl test)
 
-The following engines were **blocked or untestable** via curl from this server and need verification via SearXNG (once deployed, see Prowl Versions.md v0.1):
+The following engines were **blocked or untestable** via curl from this server and need verification via SearXNG (once deployed, see [[prowl-versions]] v0.1):
 
 - [ ] **Baidu** — CAPTCHA wall; verify `site:`, `inurl:`, `intitle:`, `filetype:`, `"..."`, `-` operators live. Also test the "no space after operator" claim.
 - [ ] **Yandex** — blocked (zero response); verify `site:`, `mime:`, `lang:ru`, `date:YYYYMMDD`, `inurl:`, `intitle:`, `"..."`, `-` operators live (already doc-verified).

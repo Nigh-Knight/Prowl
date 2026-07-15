@@ -1,6 +1,6 @@
 # Prowl — PRD-0.1
 
-> **Scope (v0.1):** everything needed to build `prowl-core` + `prowl-pi` (commands `search`, `query`, `chat`) on local SearXNG + Firecrawl. Non-technical / vision content is in `litter-web.md`; future-version scope is in `roadmap.md`; deployment / ops config is in `search-scraper-setup.md`.
+> **Scope (v0.1):** everything needed to build `prowl-core` + `prowl-pi` (commands `search`, `query`, `chat`) on local SearXNG + Firecrawl. Non-technical / vision content is in [[litter-web]]; future-version scope is in [[roadmap]]; deployment / ops config is in [[search-scraper-setup]].
 
 ## Version: 0.1.0
 
@@ -87,7 +87,7 @@ SearXNG is the meta-search layer (not a backend). The table below reflects live 
 | Naver | KO | Primary | Yes | ✅ live-fetched | Korean web + blogs/cafés |
 | Mail.ru | RU | Historical independent | Limited | ✅ live (optional) | RU supplemental |
 
-**Live curl test (2026-07-14, US server):** Naver, Sogou, Mail.ru, Marginalia, Mojeek, Wiby confirmed reachable and returning real search results. `site:` and `inurl:` operators verified on Naver and Sogou. **Baidu** (CAPTCHA wall), **Yandex** (zero response), **Haosou/360** (redirect failed) inaccessible from this server — may require SearXNG deployment in-region or VPN. See `query-variations.md` §2 for per-operator live-test statuses.
+**Live curl test (2026-07-14, US server):** Naver, Sogou, Mail.ru, Marginalia, Mojeek, Wiby confirmed reachable and returning real search results. `site:` and `inurl:` operators verified on Naver and Sogou. **Baidu** (CAPTCHA wall), **Yandex** (zero response), **Haosou/360** (redirect failed) inaccessible from this server — may require SearXNG deployment in-region or VPN. See [[query-variations]] §2 for per-operator live-test statuses.
 
 **Engine notes:** `sogou` and `360search` are verified ZH essentials. Naver has no native SearXNG backend and requires a `json_engine` (Naver openapi) or `xpath` scrape configuration.
 
@@ -224,13 +224,13 @@ It is also applied automatically during `SCATTER`.
 
 # 5. Query Planning & Variation Generation
 
-**How-to reference → `query-variations.md`:** When forming queries, the planner MUST consult `query-variations.md` as the *how* — it is the per-engine × per-language variation reference and few-shot bank that fills every stance/surface slot (§3.1–§3.4). This PRD specifies *what* to vary; `query-variations.md` specifies *how* to emit each variation natively per target language.
+**How-to reference → [[query-variations]]:** When forming queries, the planner MUST consult [[query-variations]] as the *how* — it is the per-engine × per-language variation reference and few-shot bank that fills every stance/surface slot (§3.1–§3.4). This PRD specifies *what* to vary; [[query-variations]] specifies *how* to emit each variation natively per target language.
 
 ### 5.1. Variation Dimensions
 
-The eight dimensions below are a **stance taxonomy** — they describe *what kind of angle* to take on a query. They are **slots, not English templates**. Each slot is filled differently per language using that language's native register, genre, platform idiom, and script (Layer 2). The planner (.1, Qwen) emits each variation **natively per target language**; it does **not** generate in English and machine-translate. The per-language / per-engine *filling* of every slot lives in `query-variations.md` (§3.4), which is the few-shot bank the planner consults.
+The eight dimensions below are a **stance taxonomy** — they describe *what kind of angle* to take on a query. They are **slots, not English templates**. Each slot is filled differently per language using that language's native register, genre, platform idiom, and script (Layer 2). The planner (.1, Qwen) emits each variation **natively per target language**; it does **not** generate in English and machine-translate. The per-language / per-engine *filling* of every slot lives in [[query-variations]] (§3.4), which is the few-shot bank the planner consults.
 
-**Research status (Perplexity pass, 2026-07-13):** the slots are sound *product-design dimensions* but are **not empirically validated cross-cultural facts** — treat them as optional query angles, not cultural rules. Each carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED]** tag in `query-variations.md`. Scope is the **established 6** (ZH, RU, JA, KO, ES, PT); planned languages are deferred (see `roadmap.md` §1).
+**Research status (Perplexity pass, 2026-07-13):** the slots are sound *product-design dimensions* but are **not empirically validated cross-cultural facts** — treat them as optional query angles, not cultural rules. Each carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED]** tag in [[query-variations]]. Scope is the **established 6** (ZH, RU, JA, KO, ES, PT); planned languages are deferred (see [[roadmap]] §1).
 
 ### Layer 1 — Stance dimensions (language-neutral slots)
 
@@ -248,14 +248,14 @@ The eight dimensions below are a **stance taxonomy** — they describe *what kin
 
 ### Layer 2 — Linguistic-surface dimensions (language-dependent; the missing half)
 
-These are the dimensions the English-only list had no concept of. They are what make multilingual retrieval actually reach the native-discourse layer instead of the English-indexed sliver. Each is parameterized per (language, platform) in `query-variations.md`. **Verification status of each (VERIFIED / PARTIALLY VERIFIED / UNVERIFIED) now lives in `query-variations.md` §1.2 — several recall-effect claims below were downgraded from assumption to UNVERIFIED pending benchmark evidence.**
+These are the dimensions the English-only list had no concept of. They are what make multilingual retrieval actually reach the native-discourse layer instead of the English-indexed sliver. Each is parameterized per (language, platform) in [[query-variations]]. **Verification status of each (VERIFIED / PARTIALLY VERIFIED / UNVERIFIED) now lives in [[query-variations]] §1.2 — several recall-effect claims below were downgraded from assumption to UNVERIFIED pending benchmark evidence.**
 
 | Dimension | What it controls |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Script / Transliteration | ZH: 汉字 + 拼音 + English brand + slang abbrev. RU: Cyrillic **and** Latin (`психоз` vs `psikhoz`). Searching only the English name misses the native layer. |
 | Dialect / Region | ES: Castilian / MX / AR (voseo) / CO. PT: BR / PT. ZH: Mandarin / Cantonese (粵語) / TW. Colloquial must be dialect-tagged or it is wrong. |
-| Code-switching | Macaronic queries mixing native + English technical term (ZH tech boards leave "depression" in English; LatAm mixes English slang). Test as a candidate and score vs pure-native/pure-English; status **[UNVERIFIED—do not claim outperformance]** (see `query-variations.md` §1.2). |
-| Orthographic Variant | ZH simplified↔traditional (大陆/台灣/香港); JA shinjitai/kyujitai; KO spacing. Preserve where corpus/region requires; tokenization-split claims are **[UNVERIFIED]** (see `query-variations.md` §1.2). |
+| Code-switching | Macaronic queries mixing native + English technical term (ZH tech boards leave "depression" in English; LatAm mixes English slang). Test as a candidate and score vs pure-native/pure-English; status **[UNVERIFIED—do not claim outperformance]** (see [[query-variations]] §1.2). |
+| Orthographic Variant | ZH simplified↔traditional (大陆/台灣/香港); JA shinjitai/kyujitai; KO spacing. Preserve where corpus/region requires; tokenization-split claims are **[UNVERIFIED]** (see [[query-variations]] §1.2). |
 | Politeness / Community Register | JA keigo, KO jondaetmal/banmal — signals *which community* is addressed, not just formality. |
 | Platform-native Idiom | 4chan greentext ≠ Tieba 吧-post ≠ Naver café-post ≠ 5ch ワイ/名無し. Your "forum-style" slot, made per-(language, platform). |
 | Era / Calendar Anchor | For temporal variation (§5.2): Japanese 令和/平成/昭和, Chinese 朝代/事件 anchors (非典时期 = SARS = 2003), Hijri, etc. |
@@ -264,14 +264,14 @@ These are the dimensions the English-only list had no concept of. They are what 
 
 Temporal intent and temporal *matching* are both multilingual and must not be anchored to English lexemes or Anglo regulatory cadence. Four surfaces:
 
-**Research status:** document-relative time = **[VERIFIED]** IR rule; multilingual intent + era/event anchors = **[PARTIALLY VERIFIED]**; Baidu/Naver date operators = **[UNVERIFIED—removed]** pending primary-source verification (see `query-variations.md` §2/§3).
+**Research status:** document-relative time = **[VERIFIED]** IR rule; multilingual intent + era/event anchors = **[PARTIALLY VERIFIED]**; Baidu/Naver date operators = **[UNVERIFIED—removed]** pending primary-source verification (see [[query-variations]] §2/§3).
 
 1. **Multilingual intent detection.** Temporal triggers ("recent / new / latest") exist per language — 最近 (ZH), недавно (RU), 最近/最近 (JA), 최근 (KO), reciente (ES), recente (PT). The planner detects temporal intent in the *user's question in any supported language*, not English only.
-2. **Era / event anchoring (not just ISO).** A hard "pre-2005" cutoff is meaningless when a user anchors to "the 平成 era" or "SARS period." Support era/event anchors per language (§3.1 Layer 2, `query-variations.md`): Japanese 令和/平成/昭和, Chinese 朝代 + event anchors (非典时期, 文革), Hijri for AR, etc. The planner maps these to date ranges.
-3. **Per-engine enforcement.** The *operator* that realizes a temporal intent differs per engine — Google `before:/after:` **[PARTIALLY VERIFIED]** (live-test before rely); Yandex `date:` **[VERIFIED]** but exact `YYYYMMDD` grammar unverified; **Baidu `date:YYYY..YYYY` / `before:/after:` — REMOVED (unverified, Perplexity)**; Naver `fromYYYYMMDDtoYYYYMMDD` — **REMOVED as a Naver-native operator** (third-party SERP API only); Bing freshness **[VERIFIED for retired Web Search API]** (API retired Aug 2025). Full per-engine table + statuses in `query-variations.md` §2.
+2. **Era / event anchoring (not just ISO).** A hard "pre-2005" cutoff is meaningless when a user anchors to "the 平成 era" or "SARS period." Support era/event anchors per language (§3.1 Layer 2, [[query-variations]]): Japanese 令和/平成/昭和, Chinese 朝代 + event anchors (非典时期, 文革), Hijri for AR, etc. The planner maps these to date ranges.
+3. **Per-engine enforcement.** The *operator* that realizes a temporal intent differs per engine — Google `before:/after:` **[PARTIALLY VERIFIED]** (live-test before rely); Yandex `date:` **[VERIFIED]** but exact `YYYYMMDD` grammar unverified; **Baidu `date:YYYY..YYYY` / `before:/after:` — REMOVED (unverified, Perplexity)**; Naver `fromYYYYMMDDtoYYYYMMDD` — **REMOVED as a Naver-native operator** (third-party SERP API only); Bing freshness **[VERIFIED for retired Web Search API]** (API retired Aug 2025). Full per-engine table + statuses in [[query-variations]] §2.
 4. **Document-relative + result-content matching.** (a) Temporal markers in *result content* are in the result's language, not the query's — match 最近 / недавно / 최근 inside results too. (b) Time is **document-relative**: a 2008 archived thread saying "最近" means 2008, not 2026. This is acute for Prowl's Internet Archive / dead-forum layer. Anchor temporal matching to each document's own date.
 
-**Culturally-relative "emerging."** "Emerging treatment → last-5-year" assumes an Anglo FDA ~5-year approval cadence. It is wrong cross-culturally: TCM approaches have continuous native discourse over *centuries*; Russian preprint culture has its own rhythm. Bucketing by Western regulatory rhythm defeats the cross-cultural listening-post thesis. Treat "emerging" as a *soft* recency weight, not a hard 5-year gate, and apply per-language discourse baselines from `query-variations.md`.
+**Culturally-relative "emerging."** "Emerging treatment → last-5-year" assumes an Anglo FDA ~5-year approval cadence. It is wrong cross-culturally: TCM approaches have continuous native discourse over *centuries*; Russian preprint culture has its own rhythm. Bucketing by Western regulatory rhythm defeats the cross-cultural listening-post thesis. Treat "emerging" as a *soft* recency weight, not a hard 5-year gate, and apply per-language discourse baselines from [[query-variations]].
 
 ### 5.3. Adaptive Re-Planning
 
@@ -279,11 +279,11 @@ After initial results, the planner evaluates within the current session: **cover
 
 ### 5.4. Query Variation Reference & Control
 
-**External reference doc (research-gated):** `query-variations.md` is the per-engine × per-language variation reference and few-shot bank. As of the 2026-07-13 Perplexity research pass, every operator/idiom/era claim carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED—DO NOT EMIT]** label. Unverified items — notably Baidu/Naver date operators and all platform-native idioms — are **quarantined** and must not be emitted as rules until sourced + integration-tested. It makes §5.1 Layer 2 and §5.2 enforcement concrete for the established 6 languages. **The planner (§5.1) consults this doc to emit native variations; §5 defines the dimension contract, §5.1 executes it.**
+**External reference doc (research-gated):** [[query-variations]] is the per-engine × per-language variation reference and few-shot bank. As of the 2026-07-13 Perplexity research pass, every operator/idiom/era claim carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED—DO NOT EMIT]** label. Unverified items — notably Baidu/Naver date operators and all platform-native idioms — are **quarantined** and must not be emitted as rules until sourced + integration-tested. It makes §5.1 Layer 2 and §5.2 enforcement concrete for the established 6 languages. **The planner (§5.1) consults this doc to emit native variations; §5 defines the dimension contract, §5.1 executes it.**
 
 **Division of labor (clarified):**
 - **§5.1 = specification ("how to vary").** Owns the two-layer dimension model and the per-language surface rules — language-neutral stance slots + language-dependent linguistic-surface dimensions.
-- **§5.1 = emission ("actually emit it").** Qwen fills each slot with *native* idiom per target language, constrained by `query-variations.md` few-shot examples. This is an explicit **translation / emission phase** between planning (§5) and search execution — given its centrality to the cross-cultural thesis, it is a first-class pipeline stage, not an afterthought.
+- **§5.1 = emission ("actually emit it").** Qwen fills each slot with *native* idiom per target language, constrained by [[query-variations]] few-shot examples. This is an explicit **translation / emission phase** between planning (§5) and search execution — given its centrality to the cross-cultural thesis, it is a first-class pipeline stage, not an afterthought.
 - Qwen emits natively (option B): it does **not** generate English variations and machine-translate. Register fidelity for the hardest pairs (Tieba 吧, 5ch ワイ, Naver café, DCinside) is protected by the few-shot bank; region-native models may be used for the lowest-fidelity pairs.
 
 **Configurable count:** Default is 8-12 variations per language, user-configurable via `settings.json`. On command, the planner can generate N more: "generate 20 more."
@@ -440,9 +440,9 @@ Positive search: SearXNG ?engines=marginalia,yandex "magnesium orotate forum"
 - Optional video URL (Qwen watches frames for planning only)
 
 **Outputs (emission stage — see §5.4):**
-- 8-12 query variations **per language, emitted natively** (not MT-from-English), one per §3.1 Layer-1 stance slot, each filled with the target language's Layer-2 linguistic surface (script/transliteration, dialect, code-switch, orthographic variant, politeness, platform idiom) per `query-variations.md`.
+- 8-12 query variations **per language, emitted natively** (not MT-from-English), one per §3.1 Layer-1 stance slot, each filled with the target language's Layer-2 linguistic surface (script/transliteration, dialect, code-switch, orthographic variant, politeness, platform idiom) per [[query-variations]].
 - Languages: **core** ZH, RU, JA, KO, ES, PT
-- The planner consults `query-variations.md` as its few-shot bank for native-idiom fidelity on the hardest (language, platform) pairs.
+- The planner consults [[query-variations]] as its few-shot bank for native-idiom fidelity on the hardest (language, platform) pairs.
 
 # 10. pi Extension Architecture
 

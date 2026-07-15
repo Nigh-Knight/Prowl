@@ -1,6 +1,6 @@
 # Prowl — Roadmap (Future Versions)
 
-> **Scope (future):** everything beyond v0.1. The v0.1 build is in `PRD-0.1.md`; vision / non-technical content is in `litter-web.md`; deployment config is in `search-scraper-setup.md`.
+> **Scope (future):** everything beyond v0.1. The v0.1 build is in [[PRD-0.1]]; vision / non-technical content is in [[litter-web]]; deployment config is in [[search-scraper-setup]].
 
 ## Table of Contents
 
@@ -74,17 +74,17 @@
 
 # 1. Planned Language Expansions (TODO)
 
-Languages to add beyond the **core 6** (ZH, RU, JA, KO, ES, PT). None implemented yet — each requires the §3.3 dork-target + §3.4 index discovery and the §5.1 Layer-2 parameterization described in `query-variations.md`. Tracked for a later build; do not promote to the active language list (PRD-0.1.md §9.1) until its ecosystem is verified.
+Languages to add beyond the **core 6** (ZH, RU, JA, KO, ES, PT). None implemented yet — each requires the §3.3 dork-target + §3.4 index discovery and the §5.1 Layer-2 parameterization described in [[query-variations]]. Tracked for a later build; do not promote to the active language list ([[PRD-0.1]] §9.1) until its ecosystem is verified.
 
-**Perplexity note (2026-07-13):** the FR/DE "translation-only" and AR/HI "prove Layer 2" rationales are *strategy opinions, not verified technical facts* — relabel when implemented. Current build focus is the established 6 (see `query-variations.md`).
+**Perplexity note (2026-07-13):** the FR/DE "translation-only" and AR/HI "prove Layer 2" rationales are *strategy opinions, not verified technical facts* — relabel when implemented. Current build focus is the established 6 (see [[query-variations]]).
 
 - [ ] **French (FR)** — translation-only; shares the English web's infrastructure (Google/Bing, same pastebins/file hosts). Adds Western-European reach, no new technique. *(Cheap.)*
 - [ ] **German (DE)** — same as FR: translation-only, shares EN web infra. Adds Western-European reach. *(Cheap.)*
 - [ ] **Czech (CS)** — *own domestic search engine* **Seznam** (~13% of the Czech market). A country with its own engine has unique SEO dynamics, local hosting, and a deep domestic litter web Google misses. Needs Seznam routing + CS Layer-2. *(Gemini-suggested.)*
 - [ ] **Polish (PL)** — highly insular web; massive imageboard/forum culture (Wykop = PL Reddit/4chan equivalent) operating entirely in Polish — a rich tech/political/cultural litter repository. Needs PL Layer-2 + Wykop dork targets. *(Gemini-suggested.)*
 - [ ] **Ukrainian (UK)** — as Ukraine decouples digital infrastructure from the Russian Runet, a large unique domestic web is forming (localized wartime tech, cybersecurity logs, regional history). Needs UK Layer-2 + regional routing. *(Gemini-suggested.)*
-- [ ] **Arabic (AR)** — *ecosystem discovery* (phase-2): own regional engines, preferred pastebins (JustPaste.it / AnonPaste / textm.ee), file hosts (UploadNexus / storage.to), RTL, Hijri era anchors, chat-alphabet + dialect transliteration. The only additions that prove Layer 2 generalizes. *(See `query-variations.md` §7.8.)*
-- [ ] **Hindi (HI)** — *ecosystem discovery* (phase-2): own regional engines, pastebin (pastebin.in / Pasteshr), file host (Digiboxx), Devanagari + Hinglish transliteration. *(See `query-variations.md` §7.8.)*
+- [ ] **Arabic (AR)** — *ecosystem discovery* (phase-2): own regional engines, preferred pastebins (JustPaste.it / AnonPaste / textm.ee), file hosts (UploadNexus / storage.to), RTL, Hijri era anchors, chat-alphabet + dialect transliteration. The only additions that prove Layer 2 generalizes. *(See [[query-variations]] §7.8.)*
+- [ ] **Hindi (HI)** — *ecosystem discovery* (phase-2): own regional engines, pastebin (pastebin.in / Pasteshr), file host (Digiboxx), Devanagari + Hinglish transliteration. *(See [[query-variations]] §7.8.)*
 
 ---
 
@@ -499,13 +499,13 @@ OUTPUT: List of issues + recommendations
 
 ### 6.5. Obsidian Graph
 
-`[[Concept]]` wikilinks in pages auto-generate Obsidian graph. No extra prompt. Open wiki folder in Obsidian → graph view appears.
+[[Concept]] wikilinks in pages auto-generate Obsidian graph. No extra prompt. Open wiki folder in Obsidian → graph view appears.
 
 ---
 
 # 7. pi Extension Architecture — Future Commands
 
-The `prowl-pi` adapter skeleton, v0.1 command rows, tools, and event hooks are specified in `PRD-0.1.md` §18. The remaining commands planned for the adapter:
+The `prowl-pi` adapter skeleton, v0.1 command rows, tools, and event hooks are specified in [[PRD-0.1]] §18. The remaining commands planned for the adapter:
 
 | Command | Description | |
 | --------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
@@ -920,7 +920,7 @@ This tiering is why the pool is bigger than a single Firecrawl container would a
 
 ### Warm pool, not cold-spin
 
-Keep a **standing warm pool** sized by deployment profile (Pi = 1–2 Firecrawl workers, RackNerd VPS = more; see `Prowl Versions.md`). Grow the **task queue**, not the containers: spinning up a fresh Firecrawl container on demand is slow (Chromium download/start) and RAM-heavy, so elastic spin-up is reserved for the lighter `SearchPort` if at all. The pool + queue model also survives interruption: a killed run resumes against the same pool (§10.9 `runId`).
+Keep a **standing warm pool** sized by deployment profile (Pi = 1–2 Firecrawl workers, RackNerd VPS = more; see [[prowl-versions]]). Grow the **task queue**, not the containers: spinning up a fresh Firecrawl container on demand is slow (Chromium download/start) and RAM-heavy, so elastic spin-up is reserved for the lighter `SearchPort` if at all. The pool + queue model also survives interruption: a killed run resumes against the same pool (§10.9 `runId`).
 
 ### Frontier crawl (web of searches)
 

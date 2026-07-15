@@ -1,6 +1,6 @@
 # Prowl — Litter Web (Vision & Non-Technical)
 
-> **Scope (vision / non-technical):** non-technical, vision, and rationale content extracted from the PRD. The v0.1 technical build is in `PRD-0.1.md`; future-version scope is in `roadmap.md`; deployment config is in `search-scraper-setup.md`.
+> **Scope (vision / non-technical):** non-technical, vision, and rationale content extracted from the PRD. The v0.1 technical build is in [[PRD-0.1]]; future-version scope is in [[roadmap]]; deployment config is in [[search-scraper-setup]].
 
 # 2. What is the Litter Web?
 

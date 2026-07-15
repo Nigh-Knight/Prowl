@@ -1,6 +1,6 @@
 # Prowl — Deployment (SearXNG + Firecrawl)
 
-> **Scope (ops, not build):** deployment / configuration manual for standing up the self-hosted search + extraction stack. `prowl-core` / `prowl-pi` do **not** need any of this to know how to issue queries — that behavioral spec lives in `PRD-0.1.md` §13.5 (query format) and §13.7 (negative-search). You run this setup yourself; the agent only consumes the running endpoints.
+> **Scope (ops, not build):** deployment / configuration manual for standing up the self-hosted search + extraction stack. `prowl-core` / `prowl-pi` do **not** need any of this to know how to issue queries — that behavioral spec lives in [[PRD-0.1]] §13.5 (query format) and §13.7 (negative-search). You run this setup yourself; the agent only consumes the running endpoints.
 
 ## 13.3 SearXNG Configuration
 

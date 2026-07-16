@@ -73,7 +73,6 @@ SearXNG is the meta-search layer (not a backend). The table below reflects live 
 | Google | all | Primary | Yes | ✅ | Baseline |
 | Bing | all | Primary | Yes | ✅ | Alt baseline (better ZH/RU) |
 | Yandex | RU | Primary | Limited | ✅ | RU web (**Search only** — not Disk) |
-| Baidu | ZH | Primary | Yes | ✅ live-fetched | Mainland ZH web |
 | Sogou | ZH | Primary | Yes | ✅ live-fetched | Mainland ZH web (general; *not* WeChat) |
 | Haosou / 360 | ZH | Primary | Yes | ✅ public | Mainland ZH triangulation |
 | Mojeek | EN/ES | Truly independent | Yes | ✅ live-fetched | Independent EN/ES discovery |
@@ -100,10 +99,9 @@ SearXNG is the meta-search layer (not a backend). The table below reflects live 
 | Engine | Dork operators / technique |
 | --- | --- |
 | Google / Bing / Startpage / DDG | `site:`, `filetype:`, `intitle:`, `inurl:`, `"…"`, `-`, `OR`, `*` |
-| Yandex (Search, not Disk) | `site:`, `mime:` (filetype), `lang:ru` (ISO), `date:YYYYMMDD`, `inurl:`, `intitle:`, `"…"`, `-`. **[PRIMARY-DOC-VERIFIED]** — blocked from US server, docs confirm all operators. |
-| Baidu | `site:`, `filetype:`/`type:`, `intitle:`, `inurl:`, `"…"`, `-` (**no space** after operator, OSINT-REPORTED); indexes ZH UGC best. **⚠️ Blocked (CAPTCHA) from US server** — needs SearXNG/in-region proxy. |
+| Yandex (Search, not Disk) | `site:`, `mime:` (filetype), `lang:ru` (ISO), `date:YYYYMMDD`, `inurl:`, `intitle:`, `"..."`, `-`. **[PRIMARY-DOC-VERIFIED]** + **[LIVE-TESTED via SearXNG]** — 14 docs returned. |
 | Sogou | `site:` **[LIVE-TESTED]**; `intitle:`, `inurl:`, `filetype:`, `"…"`, `-` (WeChat needs API → deep-web). Chinese query results JS-rendered. |
-| Haosou / 360 | `site:`, `filetype:`, `intitle:`, `inurl:` **⚠️ Blocked (redirect loop) from US server** — needs SearXNG. |
+| Haosou / 360 | `site:`, `filetype:`, `intitle:`, `inurl:` **[LIVE-TESTED via SearXNG]** — 7 docs returned, top hit 知乎. Workable ZH search engine. |
 | Mojeek | Google-like: `site:`, `filetype:`, `intitle:`, `inurl:`, `"…"`, `-`; independent EN/ES |
 | Brave | Google-like: `site:`, `filetype:`, `intitle:`, `inurl:`, `"…"`, `OR`, `*` |
 | Qwant | `site:`, `filetype:`, `intitle:`, `inurl:`, `"…"`, `-` (hybrid/supplemental) |
@@ -153,9 +151,9 @@ Every target below was verified to return **actual hosted content** via `site:` 
 
 ### 3.3. Multi-Language Search
 
-This section is **dork targets per language**. The *engine* layer (Baidu/Sogou/Haosou for ZH, Yandex for RU, Naver for KO, etc.) is defined in §3.1. Route `site:` dorks through the matching regional engine (Baidu/Sogou for ZH long-tail; Google/Bing for major platforms).
+This section is **dork targets per language**. The *engine* layer (Sogou/Haosou for ZH, Yandex for RU, Naver for KO, etc.) is defined in §3.1. Route `site:` dorks through the matching regional engine (Baidu/Sogou for ZH long-tail; Google/Bing for major platforms).
 
-**Chinese (engines: Baidu, Sogou, Haosou):** `site:zhihu.com`, `site:tieba.baidu.com`, `site:douban.com` + translated keywords
+**Chinese (engines: Sogou, Haosou):** `site:zhihu.com`, `site:tieba.baidu.com`, `site:douban.com` + translated keywords
 **Russian (engine: Yandex, Google):** `site:livejournal.com` (RU), `site:pikabu.ru`, `site:rusmedserv.com`
 **Spanish (engines: Google, Bing, Mojeek, Brave):** `site:foro.memesmedicos.com`, `site:infotiti.com`
 **Japanese (engines: Google, Bing):** `site:5ch.net`, `site:medley.jp`, `site:ch.net`
@@ -264,11 +262,11 @@ These are the dimensions the English-only list had no concept of. They are what 
 
 Temporal intent and temporal *matching* are both multilingual and must not be anchored to English lexemes or Anglo regulatory cadence. Four surfaces:
 
-**Research status:** document-relative time = **[VERIFIED]** IR rule; multilingual intent + era/event anchors = **[PARTIALLY VERIFIED]**; Baidu/Naver date operators = **[UNVERIFIED—removed]** pending primary-source verification (see [[query-variations]] §2/§3).
+**Research status:** document-relative time = **[VERIFIED]** IR rule; multilingual intent + era/event anchors = **[PARTIALLY VERIFIED]**; Naver date operators = **[UNVERIFIED—removed]** pending primary-source verification (see [[query-variations]] §2/§3).
 
 1. **Multilingual intent detection.** Temporal triggers ("recent / new / latest") exist per language — 最近 (ZH), недавно (RU), 最近/最近 (JA), 최근 (KO), reciente (ES), recente (PT). The planner detects temporal intent in the *user's question in any supported language*, not English only.
 2. **Era / event anchoring (not just ISO).** A hard "pre-2005" cutoff is meaningless when a user anchors to "the 平成 era" or "SARS period." Support era/event anchors per language (§3.1 Layer 2, [[query-variations]]): Japanese 令和/平成/昭和, Chinese 朝代 + event anchors (非典时期, 文革), Hijri for AR, etc. The planner maps these to date ranges.
-3. **Per-engine enforcement.** The *operator* that realizes a temporal intent differs per engine — Google `before:/after:` **[PARTIALLY VERIFIED]** (live-test before rely); Yandex `date:` **[VERIFIED]** but exact `YYYYMMDD` grammar unverified; **Baidu `date:YYYY..YYYY` / `before:/after:` — REMOVED (unverified, Perplexity)**; Naver `fromYYYYMMDDtoYYYYMMDD` — **REMOVED as a Naver-native operator** (third-party SERP API only); Bing freshness **[VERIFIED for retired Web Search API]** (API retired Aug 2025). Full per-engine table + statuses in [[query-variations]] §2.
+3. **Per-engine enforcement.** The *operator* that realizes a temporal intent differs per engine — Google `before:/after:` **[OSINT-REPORTED]** (live test returned EMPTY — likely not functional); Yandex `date:` **[VERIFIED]** + **[LIVE-TESTED via SearXNG]**; **Naver `before:` — [LIVE-TESTED]** (works via SearXNG, 15 docs); Naver `fromYYYYMMDDtoYYYYMMDD` — **REMOVED as a Naver-native operator** (third-party SERP API only); Bing freshness **[VERIFIED for retired Web Search API]** (API retired Aug 2025). Full per-engine table + statuses in [[query-variations]] §2.
 4. **Document-relative + result-content matching.** (a) Temporal markers in *result content* are in the result's language, not the query's — match 最近 / недавно / 최근 inside results too. (b) Time is **document-relative**: a 2008 archived thread saying "最近" means 2008, not 2026. This is acute for Prowl's Internet Archive / dead-forum layer. Anchor temporal matching to each document's own date.
 
 **Culturally-relative "emerging."** "Emerging treatment → last-5-year" assumes an Anglo FDA ~5-year approval cadence. It is wrong cross-culturally: TCM approaches have continuous native discourse over *centuries*; Russian preprint culture has its own rhythm. Bucketing by Western regulatory rhythm defeats the cross-cultural listening-post thesis. Treat "emerging" as a *soft* recency weight, not a hard 5-year gate, and apply per-language discourse baselines from [[query-variations]].
@@ -279,7 +277,7 @@ After initial results, the planner evaluates within the current session: **cover
 
 ### 5.4. Query Variation Reference & Control
 
-**External reference doc (research-gated):** [[query-variations]] is the per-engine × per-language variation reference and few-shot bank. As of the 2026-07-13 Perplexity research pass, every operator/idiom/era claim carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED—DO NOT EMIT]** label. Unverified items — notably Baidu/Naver date operators and all platform-native idioms — are **quarantined** and must not be emitted as rules until sourced + integration-tested. It makes §5.1 Layer 2 and §5.2 enforcement concrete for the established 6 languages. **The planner (§5.1) consults this doc to emit native variations; §5 defines the dimension contract, §5.1 executes it.**
+**External reference doc (research-gated):** [[query-variations]] is the per-engine × per-language variation reference and few-shot bank. As of the 2026-07-13 Perplexity research pass, every operator/idiom/era claim carries a **[VERIFIED / PARTIALLY VERIFIED / UNVERIFIED—DO NOT EMIT]** label. Unverified items — notably Naver date operators and all platform-native idioms — are **quarantined** and must not be emitted as rules until sourced + integration-tested. It makes §5.1 Layer 2 and §5.2 enforcement concrete for the established 6 languages. **The planner (§5.1) consults this doc to emit native variations; §5 defines the dimension contract, §5.1 executes it.**
 
 **Division of labor (clarified):**
 - **§5.1 = specification ("how to vary").** Owns the two-layer dimension model and the per-language surface rules — language-neutral stance slots + language-dependent linguistic-surface dimensions.

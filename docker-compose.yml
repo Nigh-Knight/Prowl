@@ -1,7 +1,12 @@
 services:
   searxng:
     container_name: searxng
-    image: docker.io/searxng/searxng:latest
+    build:
+      dockerfile_inline: |
+        FROM docker.io/searxng/searxng:latest
+        RUN /usr/local/searxng/.venv/bin/python3 -m ensurepip && \
+            /usr/local/searxng/.venv/bin/python3 -m pip install --no-cache-dir searxng-bm25-reranker && \
+            /usr/local/searxng/.venv/bin/python3 -m pip uninstall -y pip
     restart: always
     ports:
       - "127.0.0.1:8888:8080"

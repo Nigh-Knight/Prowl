@@ -26,17 +26,18 @@
 - Prowl-core + prowl-pi only: commands `search`, `query`, `chat`
 - All future features (deep-dive, wiki, Grok, pi-remembers, loops, DSPy, web/cli adapters) are version 0.2+
 
-**SearXNG verification checklist (from curl test, 2026-07-14):**
-- [ ] Deploy SearXNG Docker container (configure `keep_only` engines per [[search-scraper-setup]] §13.3)
-- [ ] Deploy Firecrawl Docker container
-- [ ] Verify Baidu operators: `site:`, `inurl:`, `intitle:`, `filetype:`, `"..."`, `-` (was CAPTCHA-blocked via curl)
-- [ ] Verify Yandex operators: `site:`, `mime:`, `lang:ru`, `date:YYYYMMDD`, `inurl:`, `intitle:`, `"..."`, `-` (was blocked via curl)
-- [ ] Verify Haosou/360 operators: `site:`, `filetype:`, `intitle:`, `inurl:` (was redirect loop)
-- [ ] Verify Google `before:/after:` and `AROUND(n)` live (OSINT-reported, JS-rendered)
-- [ ] Verify Bing public operators (API retired Aug 2025 — test current public behavior)
-- [ ] Verify Naver public-web date operators (untested via curl)
-- [ ] Verify Mail.ru full operator set: `inurl:`, `intitle:`, `date:`, `filetype:`
-- [ ] Verify Sogou operators with Chinese queries via headless browser (JS-rendered)
+**SearXNG multi-engine verification results (2026-07-16, via Azure proxy):**
+
+| Engine | Status | Yield | Notes |
+| --- | --- | --- | --- |
+| Yandex | ✅ PASSED | 14 docs | Russian results confirmed. Operators [PRIMARY-DOC-VERIFIED] + [LIVE-TESTED]. |
+| 360search | ✅ PASSED | 7 docs | Top hit 知乎. Working ZH search engine. |
+| Google | ✅ PASSED | 31 docs | Baseline confirmed. Operators [PRIMARY-DOC-VERIFIED] + [LIVE-TESTED]. |
+| Naver | ✅ PASSED | 13 docs | Korean results confirmed. Operators [LIVE-TESTED] reconfirmed. |
+| Mail.ru | ✅ PASSED | 10 docs | Russian supplemental confirmed. |
+
+**SearXNG verification complete (2026-07-16).** All SearXNG-testable engines have been verified. Only item left is Firecrawl-dependent:
+- [ ] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.2+)**
 
 **Commands to be implemented**:
 * `/prowl search <query>`

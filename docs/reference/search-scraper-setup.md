@@ -26,7 +26,6 @@ use_default_settings:
       - mojeek
       - qwant
       - startpage
-      - baidu
       - sogou
       - 360search
       - erowid

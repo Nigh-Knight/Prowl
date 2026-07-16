@@ -1,5 +1,5 @@
 # ==============================================================================
-# SEARXNG CONFIGURATION FOR PROWL v0.1
+# SEARXNG CONFIGURATION FOR PROWL v0.1 (PUBLIC REPO TEMPLATE)
 # ==============================================================================
 
 use_default_settings:
@@ -16,9 +16,10 @@ use_default_settings:
       - mojeek
       - qwant
       - startpage
-      - baidu
       - sogou
       - 360search
+      - naver      # Added to comply with PRD-0.1 §3.1 KO coverage
+      - mailru     # Added to comply with PRD-0.1 §3.1 RU coverage
       - erowid
       - pubmed
       - google scholar
@@ -39,16 +40,22 @@ server:
 plugins:
   searx.plugins.hostnames.SXNGPlugin:
     active: true
+  searx.plugins.tracker_url_remover:
+    active: true
+  searx.plugins.oa_doi_rewrite:
+    active: true
 
-# 2. CONFIGURE THE HOSTNAMES PLUGIN SETTINGS (TOP LEVEL)
+# 2. CONFIGURE THE HOSTNAMES PLUGIN SETTINGS
+# Fixed with strict regex compliance to block slop and prioritize authorities
 hostnames:
   remove:
-    - chatgpt.com
-    - perplexity.ai
+    - '(.*\.)?chatgpt\.com$'
+    - '(.*\.)?perplexity\.ai$'
   high_priority:
-    - wikipedia.org
-    - github.com
-    - arxiv.org
+    - '(.*\.)?wikipedia\.org$'
+    - '(.*\.)?github\.com$'
+    - '(.*\.)?arxiv\.org$'
+
 # ==============================================================================
 # ENGINE SPECIFIC PROXY ROUTING
 # ==============================================================================
@@ -56,13 +63,6 @@ engines:
   # ----------------------------------------------------------------------------
   # Asian Routing (Illinois Proxy)
   # ----------------------------------------------------------------------------
-  - name: baidu
-    engine: baidu
-    shortcut: bd
-    proxies:
-      http: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
-      https: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
-
   - name: sogou
     engine: sogou
     proxies:

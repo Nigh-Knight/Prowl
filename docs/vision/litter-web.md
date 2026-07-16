@@ -25,7 +25,7 @@ The litter web exists on the same infrastructure as the commercial web. It is si
 | Unstructured data                | Open directory listings, raw paste dumps                               |
 | No commercial value              | A 2004 forum post about home remedies                                  |
 | Platform architecture            | Chan archives, ephemeral paste sites                                   |
-| Geographic restrictions          | Content on Baidu, Yandex                                               |
+| Geographic restrictions          | Content on Yandex                                               |
 | Orphaned pages                   | Pages with no inbound links from anywhere                              |
 | Link rot / digital decay         | Once-indexed content that fell out of index                            |
 

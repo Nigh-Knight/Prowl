@@ -110,7 +110,7 @@ When a result's content seems anachronistic (an idea that sounds modern but is d
 ### 2.6. Catalog Expansion (Future)
 
 Current site catalog is sparse. Target 20+ sites per category with expanded coverage of:
-- **China**: Baidu, Weibo, Tieba, Zhihu, Douyin, Bilibili
+- **China**: Weibo, Tieba, Zhihu, Douyin, Bilibili
 - **Japan**: 2ch, 5ch, Pixiv, Nicovideo, Hatena
 - **Russia**: Yandex, VK, Rutube
 - **South America**: local forums and communities

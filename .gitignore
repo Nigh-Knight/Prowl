@@ -115,3 +115,9 @@ dist
 # Old Prd
 *.bak
 docs/prd/archive
+
+*.pem
+*.pub
+prowl_azure_key
+id_rsa
+id_ed25519

@@ -1,0 +1,78 @@
+# ==============================================================================
+# SEARXNG CONFIGURATION FOR PROWL v0.1
+# ==============================================================================
+
+use_default_settings:
+  engines:
+    keep_only:
+      - google
+      - bing
+      - yandex
+      - duckduckgo
+      - marginalia
+      - wiby
+      - searchmysite
+      - brave
+      - mojeek
+      - qwant
+      - startpage
+      - baidu
+      - sogou
+      - 360search
+      - erowid
+      - pubmed
+      - google scholar
+      - reddit
+      - github
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json  # Essential for Prowl's query rotation script to parse raw data
+
+server:
+  limiter: false  # Turn off the limiter so your programmatic loops run smoothly
+  secret_key: "prowl_super_secret_local_key"
+
+plugins:
+  - name: hostnames
+    remove:
+      - chatgpt.com
+      - perplexity.ai
+    high_priority:
+      - wikipedia.org
+      - github.com
+      - arxiv.org
+
+# ==============================================================================
+# ENGINE SPECIFIC PROXY ROUTING
+# ==============================================================================
+engines:
+  # ----------------------------------------------------------------------------
+  # Asian Routing (Illinois Proxy)
+  # ----------------------------------------------------------------------------
+  - name: baidu
+    engine: baidu
+    shortcut: bd
+    proxies:
+      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+
+  - name: sogou
+    engine: sogou
+    proxies:
+      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+
+  - name: 360search
+    engine: 360search
+    proxies:
+      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+
+  # ----------------------------------------------------------------------------
+  # Eurasian/Russian Routing (Mexico Proxy)
+  # ----------------------------------------------------------------------------
+  - name: yandex
+    engine: yandex
+    shortcut: yd
+    proxies:
+      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_MEXICO}:49200"

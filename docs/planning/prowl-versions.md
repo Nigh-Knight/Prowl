@@ -37,7 +37,7 @@
 | Mail.ru | ✅ PASSED | 10 docs | Russian supplemental confirmed. |
 
 **SearXNG verification complete (2026-07-16).** All SearXNG-testable engines have been verified. Only item left is Firecrawl-dependent:
-- [ ] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.2+)**
+- [x] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.2+)** ✅ PASSED
 
 **Commands to be implemented**:
 * `/prowl search <query>`

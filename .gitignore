@@ -121,3 +121,4 @@ docs/prd/archive
 prowl_azure_key
 id_rsa
 id_ed25519
+searxng/settings.private.yml

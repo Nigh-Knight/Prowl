@@ -1,14 +1,13 @@
-version: '3.7'
-
 services:
   searxng:
     container_name: searxng
     image: docker.io/searxng/searxng:latest
     restart: always
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8888:8080"
     volumes:
-      - ./searxng:/etc/searxng:rw
+      # Map your private local file to the standard path inside the container
+      - ./searxng/settings.private.yml:/etc/searxng/settings.yml:rw
     env_file:
       - .env
     environment:

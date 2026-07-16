@@ -35,16 +35,20 @@ server:
   limiter: false  # Turn off the limiter so your programmatic loops run smoothly
   secret_key: "prowl_super_secret_local_key"
 
+# 1. TELL SEARXNG TO ENABLE THE HOSTNAMES PLUGIN
 plugins:
-  - name: hostnames
-    remove:
-      - chatgpt.com
-      - perplexity.ai
-    high_priority:
-      - wikipedia.org
-      - github.com
-      - arxiv.org
+  searx.plugins.hostnames.SXNGPlugin:
+    active: true
 
+# 2. CONFIGURE THE HOSTNAMES PLUGIN SETTINGS (TOP LEVEL)
+hostnames:
+  remove:
+    - chatgpt.com
+    - perplexity.ai
+  high_priority:
+    - wikipedia.org
+    - github.com
+    - arxiv.org
 # ==============================================================================
 # ENGINE SPECIFIC PROXY ROUTING
 # ==============================================================================
@@ -56,17 +60,20 @@ engines:
     engine: baidu
     shortcut: bd
     proxies:
-      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      http: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      https: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
 
   - name: sogou
     engine: sogou
     proxies:
-      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      http: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      https: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
 
   - name: 360search
     engine: 360search
     proxies:
-      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      http: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
+      https: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_ILLINOIS}:49200"
 
   # ----------------------------------------------------------------------------
   # Eurasian/Russian Routing (Mexico Proxy)
@@ -75,4 +82,5 @@ engines:
     engine: yandex
     shortcut: yd
     proxies:
-      all: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_MEXICO}:49200"
+      http: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_MEXICO}:49200"
+      https: "http://prowl_agent:${PROXY_PASS}@${PROXY_IP_MEXICO}:49200"

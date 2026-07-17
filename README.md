@@ -1,5 +1,5 @@
 # Prowl
-Prowl is an archaic search engine for searching and synthesizing information from the litter web
+Prowl is an archaic metasearch engine for searching and synthesizing information from the litter web
 
 ## Current scope
 **v0.1.0** is a local, Pi-first vertical slice: it runs `/prowl search` against a self-hosted SearXNG + Firecrawl stack on your machine and synthesizes results with a single Qwen model. There is no web UI, no public deployment, and no multi-user service.

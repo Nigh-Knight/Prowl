@@ -55,26 +55,29 @@ Core defines 7 port interfaces (`SearchPort`, `ScrapePort`, `FetchPort`, `ModelP
 
 | Command | Pipeline | Status |
 |---------|----------|--------|
-| `/prowl search <query>` | PLAN→SCATTER→GATHER→SYNTHESIZE→PRESENT | TBD — index.ts stub, no registration yet |
-| `/prowl query <question>` | READ→SYNTHESIZE→PRESENT | TBD |
-| `/prowl chat <query>` | PLAN/REFLECT→(SCATTER·GATHER·READ)→SYNTHESIZE→PRESENT→REFLECT | TBD |
+| `/prowl search <query>` | PLAN→SCATTER→GATHER→SYNTHESIZE→PRESENT (+EXTRACT under `--read`) | ✅ implemented (v0.1.0) |
+| `/prowl query <question>` | READ→SYNTHESIZE→PRESENT | deferred (post-v0.1.0) |
+| `/prowl chat <query>` | PLAN/REFLECT→(SCATTER·GATHER·READ)→SYNTHESIZE→PRESENT→REFLECT | deferred (post-v0.1.0) |
 
-Commands are composed from core primitives (PRD §2.1). The pi extension entry point
-(`packages/pi/src/index.ts`) is currently a **stub** — it does not yet register commands,
-tools, or hooks (handoff 2026-07-17). The pipeline engine itself is planned to live in
-`prowl-core` (per developer checkpoint + Perplexity rule: core owns orchestration).
+Commands are composed from core primitives (PRD §2.1). As of v0.1.0, `packages/pi/src/index.ts`
+registers the `/prowl` command (subcommand `search`, with an explicit `--read` evidence-mode
+flag) and wires it to the core `search()` composer in `prowl-core` (which owns orchestration,
+per the Perplexity dependency rule). `query`/`chat` and the `prowl_search` tool / event hooks
+remain deferred past v0.1.0.
 
-**Pipeline primitives** (core, not yet coded): `PLAN · SCATTER · GATHER · EXTRACT · READ ·
-SCHEMATIZE · SYNTHESIZE · PRESENT · REFLECT`.
+**Pipeline primitives** (core, implemented where used by `search`): `PLAN · SCATTER · GATHER · EXTRACT · SYNTHESIZE · PRESENT`. `READ · SCHEMATIZE · REFLECT` are defined/planned but not yet exercised by a shipped command (post-v0.1.0).
 
 ## Business Context
 
 Prowl biases toward the **unfiltered, personal, archival, and discarded** corners of the open web — across 6 core languages (ZH, RU, JA, KO, ES, PT). Value proposition: information that is more honest (no commercial incentive), more detailed (personal accounts), more diverse (cross-cultural), and earlier (premature truths).
 
-> **Status note (handoff 2026-07-17):** Documentation is the source of truth while source code
-> is sparse. Treat the architecture as intentional direction from the docs, not behavior already
-> proven by existing code. Firecrawl + SearXNG Docker stack is running and tested; the pi
-> extension surface and pipeline engine are not yet implemented.
+> **Status note (2026-07-17):** v0.1.0 is implemented and verified against the live Docker stack
+> (SearXNG + Firecrawl). `prowl-core` owns the orchestration engine (`pipeline.ts`, `commands.ts`,
+> `ranking.ts`, `selection.ts`); `prowl-pi` registers `/prowl search` (+ `--read`) and binds the
+> core ports to pi I/O. Deferred past v0.1.0 (see `docs/planning/v0.1-implementation-roadmap.md`
+> §5): `query`/`chat` commands, `UserPromptPort`, persistent `StoragePort`/`CatalogPort`, negative
+> search, multilingual dork expansion, and public deployment. Treat the architecture as
+> intentional direction; the implemented slice is the `search` command.
 
 <important if="you are adding or modifying environment configuration">
 ### Environment Config Conventions

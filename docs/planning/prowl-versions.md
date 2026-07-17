@@ -5,13 +5,17 @@
 - adapters are thin: translate input → core calls, core output → environment render
 - Deployment split: Vercel (frontend) can't run Docker. Use Cloud Run / Fly / Railway (scale-to-zero) for SearXNG + Firecrawl when hosted.
 	- v0.1.0 runs everything LOCAL. No web yet. Learn the tools before deploying.
-- **v0.1.0 scope:** the `/prowl search` vertical slice only (local, Pi-first, single-usr). Everything else is deferred past v0.1.0 — see the per-version notes and `v0.1-implementation-roadmap.md` §5.
+- **v0.1.0 scope:** the `/prowl search` vertical slice only (local, Pi-first, single-user).
+  Everything else is deferred past v0.1.0 — see the per-version notes and
+  `v0.1-implementation-roadmap.md` §5.
 
 ---
 
 ### Version 0.1.0 — Local, Pi-first search slice
 
-**Goal:** Prove the core engine works on your machine with a pi adapter — just the search command. This is the first shippable release and the only v0.1.x target. It is deliberately narrow: no `query`, no `chat`, no persistence, no public surface.
+**Goal:** Prove the core engine works on your machine with a pi adapter — just the search
+command. This is the first shippable release and the only v0.1.x target. It is deliberately
+narrow: no `query`, no `chat`, no persistence, no public surface.
 
 **Stack:**
 - `prowl-core` — TypeScript library (no Python yet)
@@ -20,7 +24,8 @@
 - **Single model:** Qwen (for both planning and synthesis)
 
 **What it does:**
-- `/prowl search <query>` → SearXNG finds URLs → (optional `--read`: Firecrawl extracts a bounded 3–5 URL set) → Qwen model synthesizes → returns summary + 3–5 sources
+- `/prowl search <query>` → SearXNG finds URLs → (optional `--read`: Firecrawl extracts a
+  bounded 3–5 URL set) → Qwen model synthesizes → returns summary + 3–5 sources
 
 **v0.1.0 scope (search slice only):**
 - `prowl-core` + `prowl-pi` only; command `search` (snippets default + `--read` evidence mode).
@@ -33,13 +38,17 @@
 - No browser-interaction automation.
 - No public deployment.
 
-**What's actually built so far (2026-07-17, groundwork for v0.1.0):**
-- Docker stack (SearXNG `:8888` + Firecrawl `:3002`) verified running.
-- `searxng-client` (`SearchPort`) and `firecrawl-client` (`scrape`) adapters working.
-- `config.ts` scrape options.
-- 7 core port *definitions* in `packages/core/src/ports.ts`.
-- Multi-engine SearXNG verification (see below).
-- **Not yet built:** Pi command registration (`index.ts` is still a stub), `ModelPort` / `PresenterPort` / `UserPromptPort`, the core `search` composer / pipeline, tests, and the Pi deploy. These are the v0.1.0 implementation work (see `v0.1-implementation-roadmap.md`).
+**What's actually built so far (2026-07-17):** v0.1.0 is **implemented** end-to-end.
+The Docker stack (SearXNG `:8888` + Firecrawl `:3002`) is verified running; `searxng-client`
+(`SearchPort`) and `firecrawl-client` (`scrape`/`ScrapePort`) adapters work; `model-client.ts`
+implements `ModelPort` (Qwen); `pi-ports.ts` implements `PresenterPort`; and
+`packages/pi/src/index.ts` registers `/prowl search` (+ `--read`) against the core `search()`
+composer. Core has the pipeline/commands/ranking/selection modules and the 7 port definitions
+(plus `CatalogPort`/`SiteEntry` + tenant-scoped `StoragePort` contracts). Tests exist:
+`packages/core/test/search.test.ts` and `packages/pi/test/smoke.test.ts`, and the multi-engine
+SearXNG verification is complete. **Not yet built** (deferred past v0.1.0, §5): `UserPromptPort`,
+persistent fs `StoragePort`/`CatalogPort` impls, `dork-planner.ts`, and the Pi deploy under
+`~/.pi/agent/extensions/prowl/`.
 
 **SearXNG multi-engine verification results (2026-07-16, via Azure proxy):**
 
@@ -54,7 +63,9 @@
 **SearXNG verification complete (2026-07-16).** All SearXNG-testable engines have been verified. Only item left is Firecrawl-dependent:
 - [x] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.1.0 `--read` path)** ✅ PASSED
 
-v0.1.0 implements the search-relevant primitives (`PLAN`, `SCATTER`, `GATHER`, `SYNTHESIZE`, `PRESENT`, and `EXTRACT` under `--read`). It does **not** implement `EVALUATE`, `PERSIST`, `ADD_SITE`, or `LINT` — those belong to post-v0.1.0 versions that add persistence and wikis.
+v0.1.0 implements the search-relevant primitives (`PLAN`, `SCATTER`, `GATHER`, `SYNTHESIZE`,
+`PRESENT`, and `EXTRACT` under `--read`). It does **not** implement `EVALUATE`, `PERSIST`,
+`ADD_SITE`, or `LINT` — those belong to post-v0.1.0 versions that add persistence and wikis.
 
 ---
 

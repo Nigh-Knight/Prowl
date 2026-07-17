@@ -6,8 +6,8 @@ Implement the core port interfaces as thin I/O translators for self-hosted tools
 
 ## Dependencies
 
-- **prowl-core**: `SearchPort`, `SearchResult` (type-only imports)
-- **openai** (^6.47.0): Will implement `ModelPort` for Qwen synthesis calls
+- **prowl-core**: `SearchPort`, `SearchResult`, `ModelPort`, `PresenterPort`, `ScrapePort` (type-only imports)
+- **openai** (^6.47.0): implements `ModelPort` for Qwen synthesis calls (`model-client.ts`)
 - **zod** (^4.4.3): Config/schema validation for structured data
 
 ## Consumers
@@ -19,26 +19,37 @@ Implement the core port interfaces as thin I/O translators for self-hosted tools
 
 ```
 src/
-├── index.ts               — STUB: needs pi extension entry (commands, tools, hooks)
+├── index.ts               — pi extension entry point: registers `/prowl` (search + --read) ✅
 ├── searxng-client.ts      — SearchPort impl: SearXNG JSON API (tested ✅)
-├── firecrawl-client.ts    — scrape() function: Firecrawl /v1/scrape (tested ✅)
+├── firecrawl-client.ts    — scrape() + scrapePort: ScrapePort (tested ✅)
+├── model-client.ts        — ModelPort impl: OpenAI-compatible Qwen (PLAN + SYNTHESIZE)
+├── pi-ports.ts            — PresenterPort impl: binds host `ctx.ui.notify`
 └── config.ts              — DEFAULT_SCRAPE_OPTIONS + ScrapeOverrides type
 ```
 
-> **Current state (handoff 2026-07-17):** `searxng-client.ts` and `firecrawl-client.ts` are
-> tested and working against the live Docker stack. `index.ts` is a **stub** — it currently only
-> re-exports the two clients and does NOT yet register `/prowl` commands, the `prowl_search`
-> tool, or event hooks. The pi extension adapter surface is not yet wired.
+> **Current state (2026-07-17):** v0.1.0 is **implemented** end-to-end and verified against the
+> live Docker stack. `index.ts` registers the `/prowl` command (subcommand `search`, with an
+> explicit `--read` evidence-mode flag) and wires it to the core `search()` composer, injecting
+> `searxngClient` (SearchPort), `modelClient` (ModelPort), `presenterPort` (PresenterPort), and
+> `scrapePort` (ScrapePort, passed only when `--read` is set so the default path makes zero
+> Firecrawl calls). `searxng-client.ts`, `firecrawl-client.ts`, and `model-client.ts` are
+> implemented and working; `pi-ports.ts` wraps the host render surface (`ctx.ui.notify`) as a
+> structurally-typed `PresenterPort`. Tests exist: `packages/core/test/search.test.ts` and
+> `packages/pi/test/smoke.test.ts`.
 >
-> **Not yet implemented (from handoff):** `dork-planner.ts` (query variation generator),
-> `site-catalog.ts` (CatalogPort impl), ModelPort client (OpenAI/Qwen), StoragePort client,
-> UserPromptPort + PresenterPort bindings, and the actual command/tool/hook registration.
+> **Not yet implemented (deferred past v0.1.0, see `v0.1-implementation-roadmap.md` §5):**
+> `UserPromptPort` (and the `REFLECT`/`ask_user` flow), persistent fs `StoragePort`/
+> `CatalogPort` impls (`site-catalog.ts`), `dork-planner.ts` (multilingual query variation),
+> and the Pi deploy under `~/.pi/agent/extensions/prowl/` (the adapter is built but not yet
+> deployed there). The `query`/`chat` commands and `prowl_search` tool / event hooks also remain
+> post-v0.1.0.
 
 ## Port as Object Literal
 
 Ports are implemented as plain objects (not classes), satisfying the interface structurally.
-`searxngClient` is the only port currently wired; `scrape()` is a standalone function that
-matches `ScrapePort` but is not yet type-annotated as one.
+`searxngClient` is the only port originally wired; `scrape()` is a standalone function that
+matches `ScrapePort` and is exported as the `scrapePort` object literal below. `modelClient`
+and `presenterPort` follow the same pattern.
 
 ```typescript
 import type { SearchPort, SearchResult } from "prowl-core";
@@ -108,13 +119,16 @@ const FIRECRAWL_URL = process.env.FIRECRAWL_URL ?? "http://127.0.0.1:3002";
 <important if="you are implementing the pi extension entry point (index.ts)">
 ### Wiring the Pi Extension (index.ts)
 
-This is the adapter's public surface. It must:
-1. Register commands: `/prowl search`, `/prowl query`, `/prowl chat`
-2. Register the LLM-callable tool `prowl_search`
+This is the adapter's public surface. As of v0.1.0 it registers the `/prowl` command
+(subcommand `search`, with an explicit `--read` evidence-mode flag) and wires it to the core
+`search()` composer, injecting the concrete ports. The remaining surface is deferred past
+v0.1.0:
+1. (done v0.1.0) Register `/prowl search` (+ `--read`); inject `searxngClient`, `modelClient`, `presenterPort`, and `scrapePort` (only when `--read` is set).
+2. Register the LLM-callable tool `prowl_search` — **deferred** (post-v0.1.0).
 3. Register event hooks: `tool_call` (intercept `prowl_search` → plan → scatter → gather →
-   synthesize → present) and `session_shutdown` (persist state)
-4. Wire the `ask_user` tool for REFLECT clarifications
-5. Deploy target is `~/.pi/agent/extensions/prowl/` (source lives at `packages/pi/`)
+   synthesize → present) and `session_shutdown` (persist state) — **deferred** (post-v0.1.0).
+4. Wire the `ask_user` tool for REFLECT clarifications (`UserPromptPort`) — **deferred** (post-v0.1.0).
+5. Deploy target is `~/.pi/agent/extensions/prowl/` (source lives at `packages/pi/`) — **not yet deployed**.
 </important>
 
 <important if="you are adding a new search engine provider">

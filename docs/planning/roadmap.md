@@ -1,6 +1,15 @@
 # Prowl — Roadmap (Future Versions)
 
-> **Scope (future):** everything beyond v0.1. The v0.1 build is in [[PRD-0.1]]; vision / non-technical content is in [[litter-web]]; deployment config is in [[search-scraper-setup]].
+> **Scope (future):** everything *after* v0.1.0. v0.1.0 is a narrow vertical slice
+> `/prowl search` command only (snippets + `--read` evidence mode), local, Pi-first, single-user.
+> The commands, modes, and infrastructure described below (`query`, `chat`, deep-dive, wiki,
+> loops, sharing, public deployment, persistent storage, negative-search, multilingual dork
+> expansion, browser interaction) are **explicitly deferred** past v0.1.0 and are tracked here
+> as future work.
+>
+> The v0.1.0 build is in [[PRD-0.1]] + `v0.1-implementation-roadmap.md`; the v0.1.0 demo/acceptance
+> is in `v0.1-demo.md`; vision / non-technical content is in [[litter-web]]; deployment config is in
+> [[search-scraper-setup]].
 
 ## Table of Contents
 
@@ -696,13 +705,12 @@ Each wiki is a git repo. "Fork" = clone → edit → deploy your own instance. T
 
 # 9. Roadmap
 
-## Phase 1: Core (now)
+## Phase 1: Core (v0.1.0 + near-term)
 - [ ] pi extension scaffolding (index.ts, SearXNG client)
-- [ ] `/prowl search` command
-- [ ] Basic SearXNG integration (Docker Compose, JSON API, no limiter)
-- [ ] **Negative search / exclusion phase** (§13.7) — query SEO engines to build per-topic blocklist
-- [ ] Qwen Search Planner (query variation + multi-language + video planning)
-- [ ] Grok 4.2 Content Synthesizer (text-only, wiki-aware)
+- [ ] `/prowl search` command (snippets + `--read` evidence mode) — **v0.1.0**
+- [x] Basic SearXNG integration (Docker Compose, JSON API, no limiter) — **done** (verified 2026-07-16)
+- [ ] Qwen Search Planner (single query reform; multi-language/dork variation deferred to v0.2)
+- [ ] **Negative search / exclusion phase** (§13.7) — **DEFERRED past v0.1.0**: query SEO engines to build per-topic blocklist
 
 ## Phase 2: Deep-Dive 
 - [ ] `/prowl deep-dive` command

@@ -4,13 +4,14 @@
 - core is environment-agnostic: knows nothing about pi / browser / terminal
 - adapters are thin: translate input → core calls, core output → environment render
 - Deployment split: Vercel (frontend) can't run Docker. Use Cloud Run / Fly / Railway (scale-to-zero) for SearXNG + Firecrawl when hosted.
-	- v0.1 runs everything LOCAL. No web yet. Learn the tools before deploying.
+	- v0.1.0 runs everything LOCAL. No web yet. Learn the tools before deploying.
+- **v0.1.0 scope:** the `/prowl search` vertical slice only (local, Pi-first, single-usr). Everything else is deferred past v0.1.0 — see the per-version notes and `v0.1-implementation-roadmap.md` §5.
 
 ---
 
-### Version 0.1 — Local and EccoMuse specific (pi-only)
+### Version 0.1.0 — Local, Pi-first search slice
 
-**Goal:** Prove the core engine works on your machine with a pi adapter before touching web.
+**Goal:** Prove the core engine works on your machine with a pi adapter — just the search command. This is the first shippable release and the only v0.1.x target. It is deliberately narrow: no `query`, no `chat`, no persistence, no public surface.
 
 **Stack:**
 - `prowl-core` — TypeScript library (no Python yet)
@@ -19,12 +20,26 @@
 - **Single model:** Qwen (for both planning and synthesis)
 
 **What it does:**
-- `/prowl [command] "topic"` → SearXNG finds URLs → Firecrawl extracts → Qwen model synthesizes → returns summary + 3-5 sources
+- `/prowl search <query>` → SearXNG finds URLs → (optional `--read`: Firecrawl extracts a bounded 3–5 URL set) → Qwen model synthesizes → returns summary + 3–5 sources
 
-**v0.1 scope (no forward references):**
-- No deep-dive mode, no wiki, no Grok, no pi-remembers, no bounded loops, no DSPy
-- Prowl-core + prowl-pi only: commands `search`, `query`, `chat`
-- All future features (deep-dive, wiki, Grok, pi-remembers, loops, DSPy, web/cli adapters) are version 0.2+
+**v0.1.0 scope (search slice only):**
+- `prowl-core` + `prowl-pi` only; command `search` (snippets default + `--read` evidence mode).
+- No `query`, no `chat`.
+- No persistent `StoragePort` / `CatalogPort` implementations (contracts defined, fs impl deferred).
+- No negative-search / exclusion (PRD §8.4).
+- No multilingual dork-planner expansion — v0.1.0 `PLAN` is a single-query Qwen stub.
+- No deep-dive, no wiki, no Grok, no pi-remembers, no bounded loops, no DSPy, no RAG.
+- No web adapter (`prowl-web`), no CLI adapter (`prowl-cli`).
+- No browser-interaction automation.
+- No public deployment.
+
+**What's actually built so far (2026-07-17, groundwork for v0.1.0):**
+- Docker stack (SearXNG `:8888` + Firecrawl `:3002`) verified running.
+- `searxng-client` (`SearchPort`) and `firecrawl-client` (`scrape`) adapters working.
+- `config.ts` scrape options.
+- 7 core port *definitions* in `packages/core/src/ports.ts`.
+- Multi-engine SearXNG verification (see below).
+- **Not yet built:** Pi command registration (`index.ts` is still a stub), `ModelPort` / `PresenterPort` / `UserPromptPort`, the core `search` composer / pipeline, tests, and the Pi deploy. These are the v0.1.0 implementation work (see `v0.1-implementation-roadmap.md`).
 
 **SearXNG multi-engine verification results (2026-07-16, via Azure proxy):**
 
@@ -37,44 +52,57 @@
 | Mail.ru | ✅ PASSED | 10 docs | Russian supplemental confirmed. |
 
 **SearXNG verification complete (2026-07-16).** All SearXNG-testable engines have been verified. Only item left is Firecrawl-dependent:
-- [x] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.2+)** ✅ PASSED
+- [x] **Sogou operators with Chinese queries via headless browser (JS-rendered) — needs Firecrawl (v0.1.0 `--read` path)** ✅ PASSED
 
-**Commands to be implemented**:
-* `/prowl search <query>`
-* `/prowl query <question>`
-* `/prowl chat <query>`
-
-Implement all primitives. Some will have empty implementations in v0.1 (e.g., `EVALUATE`, `PERSIST`, `ADD_SITE`, `LINT`).
+v0.1.0 implements the search-relevant primitives (`PLAN`, `SCATTER`, `GATHER`, `SYNTHESIZE`, `PRESENT`, and `EXTRACT` under `--read`). It does **not** implement `EVALUATE`, `PERSIST`, `ADD_SITE`, or `LINT` — those belong to post-v0.1.0 versions that add persistence and wikis.
 
 ---
 
-### Version 0.2 — Deep-Dive, Wiki, Grok, pi-remembers
+### Version 0.2 — Research depth (post-search-slice)
+
+**Goal:** Build on the stable v0.1.0 search command. Add the remaining core commands and the
+local-first capabilities they require — still Pi-first and local, no public surface yet.
+
+**Stack changes from v0.1.0:**
+- `/prowl query <question>` — needs `StoragePort` (last-results context) + `UserPromptPort`.
+- `/prowl chat <query>` — needs `StoragePort` + `UserPromptPort` (`REFLECT` / `ask_user`).
+- **Persistent `StoragePort` / `CatalogPort` (fs) implementations** — tenant-scoped, under `~/.prowl/`.
+- **Negative-search / exclusion (PRD §8.4)** — SEO-engine exclusion list + whitelist survival.
+- **Multilingual dork-planner expansion** — `dork-planner.ts` 8–12 variations across the core 6 languages.
+
+**Out of scope for 0.2:** deep-dive/wiki/Grok/pi-remembers/loops (v0.3), web/CLI adapters and
+public deployment (v0.4 / v1.0).
+
+---
+
+### Version 0.3 — Deep-Dive, Wiki, Grok, pi-remembers
 
 **Goal:** Add deep-dive research, persistent wikis, Grok synthesizer, pi-remembers RAG, and bounded loops.
 
-**Stack changes from v0.1:**
+**Stack changes from v0.2:**
 - **Grok 4.2** added as Content Synthesizer (alongside Qwen Search Planner)
 - **Deep-dive mode** with Karpathy-style wikis (ingest → page → index → lint)
 - **pi-remembers** integration for cross-topic RAG
 - **Bounded research loops** (`/prowl loop`) with tiered model routing
 - **DSPy** for structured prompting and pipeline composition
 - Full primitives: `EVALUATE`, `PERSIST`, `ADD_SITE`, `LINT` enabled
-- All commands enabled: `deep-dive`, `loop`, `lint`, `add-site`, `orphan`, `share`, `fork`, `export`, `config`, `status`
+- Commands enabled: `deep-dive`, `loop`, `lint`, `add-site`, `orphan`, `share`, `fork`, `export`, `config`, `status`
 
 Add error handling through prompting, for when a site doesn't go through or something else internally.
 
 ---
-### Version 0.3 — R-Pi as Personal VPS
+
+### Version 0.4 — R-Pi as Personal VPS
 
 **Goal:** Move SearXNG + Firecrawl off your main system onto an always-on Raspberry Pi, so you don't have to spin up Chrome locally all the time.
 
-**Stack changes from v0.1:**
+**Stack changes from v0.1.0:**
 - SearXNG → Docker on R-Pi (always-on, your LAN)
 - Firecrawl → Docker on R-Pi (Chromium runs there, not your workstation)
 - `prowl-core` unchanged — just reads `SEARXNG_URL=http://pi-local-ip:8080` from env
 - Still pi-first, but core now reaches the Pi over LAN
 
-**Why R-Pi works for v0.3:**
+**Why R-Pi works for v0.4:**
 - You already own it — $0 cost
 - Always-on = no cold starts, instant search
 - Personal use only (you're the only user) — home internet upload is fine

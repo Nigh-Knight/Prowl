@@ -5,11 +5,14 @@
 //
 // Phase 2 spike proved pi command registration + argument parsing + rendering
 // work end-to-end. Phase 4 promoted the spike's presenter into a reusable
-// `presenterPort` factory (packages/pi/src/pi-ports.ts). Phase 6 now wires the
-// real behavior: `/prowl search <topic>` invokes the core `search()` composer
+// `presenterPort` factory (packages/pi/src/pi-ports.ts). Phase 6 wires the real
+// behavior: `/prowl search <topic>` invokes the core `search()` composer
 // (PLAN → SCATTER → GATHER → SYNTHESIZE → PRESENT) with the injected
 // `searxngClient` (SearchPort), `modelClient` (ModelPort), and `presenterPort`
-// (PresenterPort). Snippets-only by default — no Firecrawl in this phase.
+// (PresenterPort). Snippets-only by default — no Firecrawl. Phase 7 adds
+// `--read` evidence mode: when set, a bounded, diverse set (3–5 URLs) is
+// extracted via `scrapePort` (ScrapePort) and its markdown flows into
+// SYNTHESIZE. Firecrawl is never called unless --read is passed.
 
 import { search } from "prowl-core";
 import { presenterPort, type PiPresenterUi } from "./pi-ports.ts";
@@ -17,6 +20,7 @@ import { presenterPort, type PiPresenterUi } from "./pi-ports.ts";
 // Adapter port objects injected into the core composer (Phase 6). Imported
 // for local use by the search handler; `presenterPort` is imported above.
 import { modelClient } from "./model-client.ts";
+import { scrapePort } from "./firecrawl-client.ts";
 import { searxngClient } from "./searxng-client.ts";
 
 // Minimal structural view of the pi host surface (registration API + command
@@ -46,11 +50,32 @@ export default function (pi: PiExtensionApi): void {
       const trimmed = args.trim();
       const spaceIdx = trimmed.indexOf(" ");
       const sub = (spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx)).toLowerCase();
-      const rest = spaceIdx === -1 ? "" : trimmed.slice(spaceIdx + 1).trim();
+      let rest = spaceIdx === -1 ? "" : trimmed.slice(spaceIdx + 1).trim();
 
       if (sub !== "search") {
         ctx.ui.notify(
-          "Prowl: only 'search' is wired. Try /prowl search <topic>.",
+          "Prowl: only 'search' is wired. Try /prowl search <topic> (add --read for evidence mode).",
+          "info",
+        );
+        return;
+      }
+
+      // Parse the explicit --read flag (evidence mode). Stays off by default so
+      // Firecrawl is never called unless the user opts in.
+      let readMode = false;
+      const readFlagIdx = rest.indexOf("--read");
+      if (readFlagIdx !== -1) {
+        readMode = true;
+        rest = (
+          rest.slice(0, readFlagIdx) + " " + rest.slice(readFlagIdx + "--read".length)
+        )
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      if (!rest) {
+        ctx.ui.notify(
+          "Prowl: provide a topic, e.g. /prowl search --read <topic>.",
           "info",
         );
         return;
@@ -58,11 +83,17 @@ export default function (pi: PiExtensionApi): void {
 
       const presenter = presenterPort(ctx.ui);
       try {
-        // Phase 6: real vertical slice. Core composer owns orchestration;
-        // adapters inject concrete ports. Snippets-only (no Firecrawl).
+        // Core composer owns orchestration; adapters inject concrete ports.
+        // Snippets-only by default; `scrape` is passed only when --read is set,
+        // so the default path makes zero Firecrawl calls.
         await search(
-          { query: rest },
-          { search: searxngClient, model: modelClient, present: presenter },
+          { query: rest, readMode },
+          {
+            search: searxngClient,
+            model: modelClient,
+            present: presenter,
+            scrape: readMode ? scrapePort : undefined,
+          },
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

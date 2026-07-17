@@ -7,6 +7,7 @@
 import type {
   ModelPort,
   PresenterPort,
+  ScrapePort,
   SearchPort,
   SearchResult,
 } from "./ports.ts";
@@ -99,6 +100,29 @@ export async function gather(results: SearchResult[]): Promise<SearchResult[]> {
   return rankResults(results);
 }
 
+/**
+ * EXTRACT — scrape the bounded selected set via the ScrapePort, attaching the
+ * returned markdown to each result as `content`. Gated on `readMode` by the
+ * caller (commands.ts); never invoked in the default snippets-only path, so
+ * Firecrawl stays conditional. A single scrape failure keeps that result
+ * snippet-only rather than aborting the whole search.
+ */
+export async function extract(
+  scrape: ScrapePort,
+  selected: SearchResult[],
+): Promise<SearchResult[]> {
+  return Promise.all(
+    selected.map(async (r): Promise<SearchResult> => {
+      try {
+        const content = await scrape.scrape(r.url);
+        return { ...r, content };
+      } catch {
+        return r; // scrape failed — keep snippet-only evidence
+      }
+    }),
+  );
+}
+
 /** Build the SYNTHESIZE prompt from the query + a bounded set of snippets. */
 export function buildSynthesisPrompt(
   query: string,
@@ -108,8 +132,9 @@ export function buildSynthesisPrompt(
   const sources = selected
     .map((r, i) => {
       const title = r.title || r.url;
-      const snip = r.snippet || "(no snippet)";
-      return `[${i + 1}] ${title}\nURL: ${r.url}\n${snip}`;
+      // Prefer full extracted content (read mode); fall back to the snippet.
+      const body = r.content && r.content.trim().length > 0 ? r.content : r.snippet;
+      return `[${i + 1}] ${title}\nURL: ${r.url}\n${body}`;
     })
     .join("\n\n");
   return [

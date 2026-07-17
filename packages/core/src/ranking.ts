@@ -67,6 +67,9 @@ function scoreResult(r: SearchResult): number {
   let score = 0;
   if (r.snippet && r.snippet.length > 0) score += 2;
   if (r.title && r.title.length > 0) score += 1;
+  // Extracted evidence (read mode) should outrank snippet-only results so the
+  // SYNTHESIZE context favors full content when available.
+  if (r.content && r.content.trim().length > 0) score += 1;
   const engine = (r.engine ?? "").toLowerCase();
   if (LITTER_ENGINES.has(engine)) score += 1;
   return score;

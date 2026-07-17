@@ -8,6 +8,11 @@ export interface SearchResult {
   url: string;
   snippet: string;
   engine?: string;
+  /**
+   * Full extracted content (markdown) when available. Populated by the EXTRACT
+   * step in read (`--read`) mode; absent in the default snippets-only path.
+   */
+  content?: string;
 }
 
 /** Multi-engine search port. */

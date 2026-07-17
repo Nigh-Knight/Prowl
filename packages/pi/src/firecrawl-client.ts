@@ -1,3 +1,5 @@
+import type { ScrapePort } from "prowl-core";
+
 import { DEFAULT_SCRAPE_OPTIONS, type ScrapeOverrides } from "./config.ts";
 
 const FIRECRAWL_URL = process.env.FIRECRAWL_URL ?? "http://127.0.0.1:3002";
@@ -24,3 +26,6 @@ export async function scrape(url: string, overrides: ScrapeOverrides = {}) {
 
   return data.data.markdown;
 }
+
+/** ScrapePort adapter object — `scrape` satisfies the core port structurally. */
+export const scrapePort: ScrapePort = { scrape };

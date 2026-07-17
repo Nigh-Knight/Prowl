@@ -13,6 +13,7 @@ export type {
 
 // Pipeline primitives (PLAN → SCATTER → GATHER → SYNTHESIZE → PRESENT).
 export {
+  extract,
   formatSearchOutput,
   gather,
   parseQueryPlan,
@@ -25,7 +26,7 @@ export {
 export type { QueryPlan } from "./pipeline.ts";
 
 // Command composers.
-export { search } from "./commands.ts";
+export { search, EXTRACTION_BUDGET } from "./commands.ts";
 export type { SearchDeps, SearchInput, SearchOutput } from "./commands.ts";
 
 // Ranking / selection policy.
@@ -36,3 +37,4 @@ export {
   rankResults,
   selectForSynthesis,
 } from "./ranking.ts";
+export { selectForExtraction } from "./selection.ts";

@@ -19,15 +19,26 @@ Implement the core port interfaces as thin I/O translators for self-hosted tools
 
 ```
 src/
-├── index.ts               — Barrel re-export (scrape, searxngClient)
-├── searxng-client.ts      — SearchPort impl: SearXNG JSON API
-├── firecrawl-client.ts    — ScrapePort impl: Firecrawl /v1/scrape
+├── index.ts               — STUB: needs pi extension entry (commands, tools, hooks)
+├── searxng-client.ts      — SearchPort impl: SearXNG JSON API (tested ✅)
+├── firecrawl-client.ts    — scrape() function: Firecrawl /v1/scrape (tested ✅)
 └── config.ts              — DEFAULT_SCRAPE_OPTIONS + ScrapeOverrides type
 ```
+
+> **Current state (handoff 2026-07-17):** `searxng-client.ts` and `firecrawl-client.ts` are
+> tested and working against the live Docker stack. `index.ts` is a **stub** — it currently only
+> re-exports the two clients and does NOT yet register `/prowl` commands, the `prowl_search`
+> tool, or event hooks. The pi extension adapter surface is not yet wired.
+>
+> **Not yet implemented (from handoff):** `dork-planner.ts` (query variation generator),
+> `site-catalog.ts` (CatalogPort impl), ModelPort client (OpenAI/Qwen), StoragePort client,
+> UserPromptPort + PresenterPort bindings, and the actual command/tool/hook registration.
 
 ## Port as Object Literal
 
 Ports are implemented as plain objects (not classes), satisfying the interface structurally.
+`searxngClient` is the only port currently wired; `scrape()` is a standalone function that
+matches `ScrapePort` but is not yet type-annotated as one.
 
 ```typescript
 import type { SearchPort, SearchResult } from "prowl-core";
@@ -91,6 +102,20 @@ const FIRECRAWL_URL = process.env.FIRECRAWL_URL ?? "http://127.0.0.1:3002";
 - **NO core runtime deps** — `import type` only from `prowl-core`
 - **NO default exports** — every export is named
 - **NO wildcard re-exports** — always `export { name } from "./module.ts"`
+- **Adapter owns Pi UI** — command registration, tool registration, and event hooks live here,
+  not in core (Perplexity dependency rule: "Adapters own … Pi UI")
+
+<important if="you are implementing the pi extension entry point (index.ts)">
+### Wiring the Pi Extension (index.ts)
+
+This is the adapter's public surface. It must:
+1. Register commands: `/prowl search`, `/prowl query`, `/prowl chat`
+2. Register the LLM-callable tool `prowl_search`
+3. Register event hooks: `tool_call` (intercept `prowl_search` → plan → scatter → gather →
+   synthesize → present) and `session_shutdown` (persist state)
+4. Wire the `ask_user` tool for REFLECT clarifications
+5. Deploy target is `~/.pi/agent/extensions/prowl/` (source lives at `packages/pi/`)
+</important>
 
 <important if="you are adding a new search engine provider">
 ### Adding a New Search Provider

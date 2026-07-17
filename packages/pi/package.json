@@ -4,6 +4,9 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
     "prowl-core": "workspace:*",
     "openai": "^6.47.0",

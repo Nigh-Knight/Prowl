@@ -126,3 +126,5 @@ searxng/settings.private.yml
 # rpiv-pi generated run history and transient artifacts
 .rpiv/workflows/runs/
 .rpiv/artifacts/
+
+*.unused

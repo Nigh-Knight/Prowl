@@ -1,10 +1,12 @@
 export type {
-  SearchResult,
-  SearchPort,
-  ScrapePort,
+  CatalogPort,
   FetchPort,
   ModelPort,
+  PresenterPort,
+  ScrapePort,
+  SearchPort,
+  SearchResult,
+  SiteEntry,
   StoragePort,
   UserPromptPort,
-  PresenterPort,
 } from "./ports.ts";

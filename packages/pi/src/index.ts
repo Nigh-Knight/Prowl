@@ -3,36 +3,43 @@
 // Extension entry point: registers the /prowl command family and binds core
 // ports to pi tools.
 //
-// Phase 2 spike: proves pi command registration + argument parsing + rendering
-// work end-to-end. Only `/prowl search <topic>` is wired; it does NO real
+// Phase 2 spike proved pi command registration + argument parsing + rendering
+// work end-to-end (only `/prowl search <topic>` is wired; it does NO real
 // search or model work yet — it just echoes "registered: <topic>" via the
-// presenter shim. Real behavior lands in later phases (search pipeline → 5/6,
-// presenter adapter → 4, model client → 3).
+// presenter). The spike's `createSpikePresenter` was promoted to a reusable
+// `presenterPort` factory in packages/pi/src/pi-ports.ts (Phase 4). Real
+// behavior lands in later phases (search pipeline → 5/6, model client → 3).
 
-import { createSpikePresenter, type SpikeCommandContext } from "./pi-spike.ts";
-// Model adapter (Qwen via OpenAI-compatible endpoint). Wire into real
-// pipeline phases once the core composer (Phase 5) is ready.
+import { presenterPort, type PiPresenterUi } from "./pi-ports.ts";
+
+// Adapter port objects the minimal search handler injects. Real search/model
+// behavior wires these into the core composer (Phase 5) once it lands.
 export { modelClient } from "./model-client.ts";
+export { searxngClient } from "./searxng-client.ts";
+export { presenterPort } from "./pi-ports.ts";
 
-// Minimal structural typing for the pi host surface. We deliberately avoid
-// importing from @earendil-works/pi-coding-agent so the adapter stays decoupled
-// from pi internals (per architecture guidance) and type-checks without the pi
-// package installed locally. The shapes mirror the documented ExtensionAPI /
-// ExtensionCommandContext used by the spike.
+// Minimal structural view of the pi host surface (registration API + command
+// context). Deliberately avoids importing @earendil-works/pi-coding-agent so
+// the adapter stays decoupled and type-checks without the pi package installed.
 interface PiExtensionApi {
   registerCommand(
     name: string,
     opts: {
       description: string;
-      handler: (args: string, ctx: SpikeCommandContext) => void | Promise<void>;
+      handler: (args: string, ctx: PiCommandContext) => void | Promise<void>;
     },
   ): void;
 }
 
+/** Minimal command-context view: just the UI render surface Prowl uses. */
+interface PiCommandContext {
+  ui: PiPresenterUi;
+}
+
 export default function (pi: PiExtensionApi): void {
   pi.registerCommand("prowl", {
-    description: "Prowl — litter-web metasearch (spike). Try: /prowl search <topic>",
-    handler: async (args: string, ctx: SpikeCommandContext) => {
+    description: "Prowl — litter-web metasearch. Try: /prowl search <topic>",
+    handler: async (args: string, ctx: PiCommandContext) => {
       // Pi splits the command on the first space: `/prowl search hello` ->
       // name "prowl", args "search hello". The subcommand is the first token.
       const trimmed = args.trim();
@@ -42,13 +49,13 @@ export default function (pi: PiExtensionApi): void {
 
       if (sub !== "search") {
         ctx.ui.notify(
-          "Prowl spike: only 'search' is wired. Try /prowl search <topic>.",
+          "Prowl: only 'search' is wired. Try /prowl search <topic>.",
           "info",
         );
         return;
       }
 
-      const presenter = createSpikePresenter(ctx);
+      const presenter = presenterPort(ctx.ui);
       await presenter.present("registered: " + rest);
     },
   });

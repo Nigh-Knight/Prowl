@@ -58,6 +58,57 @@ plugins:
 
 Self-hosted via Docker (AGPL-3.0, free). Provides `/v1/scrape` and `/v1/batch_scrape` endpoints. Uses Chromium for JS rendering — essential for modern chan archives and React/Vue-based forums.
 
+**Request format:** Always pass `formats: ["markdown"]` to get clean markdown output. These defaults are defined in `src/config.ts` and applied by `src/firecrawl-client.ts`:
+
+```json
+POST /v1/scrape
+{
+  "url": "https://example.com",
+  "formats": ["markdown"],
+  "onlyMainContent": true,
+  "removeBase64Images": true,
+  "blockAds": true,
+  "timeout": 20000
+}
+```
+
+Returns:
+```json
+{
+  "success": true,
+  "data": {
+    "markdown": "# Page title\n\nFull markdown content...",
+    "metadata": { ... }
+  }
+}
+```
+
+You can also request multiple formats: `["markdown", "html"]` if raw HTML is needed alongside.
+
+**Default config (`src/config.ts`):**
+
+```typescript
+export const DEFAULT_SCRAPE_OPTIONS = {
+  formats: ["markdown"],
+  onlyMainContent: true,
+  removeBase64Images: true,
+  blockAds: true,
+  timeout: 20_000,
+};
+```
+
+**Usage (`src/firecrawl-client.ts`):**
+
+```typescript
+import { scrape } from "./src/firecrawl-client.ts";
+
+const content = await scrape("https://example.com");
+// content is always markdown
+
+// Override per-call if needed:
+const slow = await scrape("https://slow-site.com", { timeout: 60_000 });
+```
+
 **Polite scraping:** Self-hosted Firecrawl has no rate limiter by default. Add a small delay between scrapes to avoid IP bans from niche litter-web sites.
 
 **Fallback:** If Firecrawl's Chromium is too heavy or a site blocks it, `pi-searxng-suite` (trafilatura) extracts without a browser. Having both = resilience.

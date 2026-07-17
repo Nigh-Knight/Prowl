@@ -58,7 +58,7 @@ plugins:
 
 Self-hosted via Docker (AGPL-3.0, free). Provides `/v1/scrape` and `/v1/batch_scrape` endpoints. Uses Chromium for JS rendering — essential for modern chan archives and React/Vue-based forums.
 
-**Request format:** Always pass `formats: ["markdown"]` to get clean markdown output. These defaults are defined in `src/config.ts` and applied by `src/firecrawl-client.ts`:
+**Request format:** Always pass `formats: ["markdown"]` to get clean markdown output. These defaults are defined in `packages/pi/src/config.ts` and applied by `packages/pi/src/firecrawl-client.ts`:
 
 ```json
 POST /v1/scrape
@@ -85,7 +85,7 @@ Returns:
 
 You can also request multiple formats: `["markdown", "html"]` if raw HTML is needed alongside.
 
-**Default config (`src/config.ts`):**
+**Default config (`packages/pi/src/config.ts`):**
 
 ```typescript
 export const DEFAULT_SCRAPE_OPTIONS = {
@@ -97,10 +97,10 @@ export const DEFAULT_SCRAPE_OPTIONS = {
 };
 ```
 
-**Usage (`src/firecrawl-client.ts`):**
+**Usage (`packages/pi/src/firecrawl-client.ts`):**
 
 ```typescript
-import { scrape } from "./src/firecrawl-client.ts";
+import { scrape } from "./packages/pi/src/firecrawl-client.ts";
 
 const content = await scrape("https://example.com");
 // content is always markdown

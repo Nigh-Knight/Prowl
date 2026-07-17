@@ -15,8 +15,12 @@ export async function scrape(url: string, overrides: ScrapeOverrides = {}) {
 
   if (!res.ok) throw new Error(`Firecrawl error: ${res.status}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data: { markdown: string };
+  };
   if (!data.success) throw new Error(data.error ?? "Unknown Firecrawl error");
 
-  return data.data.markdown as string;
+  return data.data.markdown;
 }

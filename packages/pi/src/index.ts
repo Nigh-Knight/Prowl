@@ -10,6 +10,9 @@
 // presenter adapter → 4, model client → 3).
 
 import { createSpikePresenter, type SpikeCommandContext } from "./pi-spike.ts";
+// Model adapter (Qwen via OpenAI-compatible endpoint). Wire into real
+// pipeline phases once the core composer (Phase 5) is ready.
+export { modelClient } from "./model-client.ts";
 
 // Minimal structural typing for the pi host surface. We deliberately avoid
 // importing from @earendil-works/pi-coding-agent so the adapter stays decoupled

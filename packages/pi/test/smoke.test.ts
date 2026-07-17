@@ -39,21 +39,13 @@ describe("prowl-pi adapter smoke tests (live Docker stack)", () => {
     expect(markdown.length).toBeGreaterThan(0);
   });
 
-  it("modelClient.generate returns non-empty text when configured", async () => {
-    // Live OpenAI-compatible endpoint required (Qwen via PROWL_MODEL_* env).
-    // Skip cleanly when unconfigured so `bun test` stays green in CI / local.
-    if (!process.env.PROWL_MODEL_API_KEY) {
-      console.warn(
-        "[smoke] skipping modelClient.generate: set PROWL_MODEL_API_KEY and " +
-          "PROWL_MODEL_BASE_URL in .env to exercise the live model path.",
-      );
-      return;
-    }
-    // Lazy import: the module constructs the OpenAI client at load time and
-    // throws without credentials, so only import once we know they exist.
-    const { modelClient } = await import("../src/model-client.ts");
-    const text = await modelClient.generate("Reply with exactly the single word: pong");
-    expect(typeof text).toBe("string");
-    expect(text.length).toBeGreaterThan(0);
+  it("model path runs inside pi with its active model (manual)", () => {
+    // Prowl no longer owns a model client/endpoint: it calls pi's active model
+    // through @earendil-works/pi-ai/compat. That requires a live pi session, so
+    // it can't be asserted here. Verified manually via `/prowl search` in pi
+    // with a model selected (e.g. Qwen 3.6-plus). We assert the structural
+    // adapter factory exists instead of invoking a network call.
+    const mod = require("../src/model-client.ts");
+    expect(typeof mod.modelPortFromContext).toBe("function");
   });
 });

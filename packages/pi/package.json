@@ -9,8 +9,7 @@
   },
   "dependencies": {
     "prowl-core": "workspace:*",
-    "openai": "^6.47.0",
-    "zod": "^4.4.3"
+    "@earendil-works/pi-ai": "^0.80.10"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"

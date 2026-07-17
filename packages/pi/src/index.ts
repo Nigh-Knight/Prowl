@@ -8,18 +8,15 @@
 // `presenterPort` factory (packages/pi/src/pi-ports.ts). Phase 6 wires the real
 // behavior: `/prowl search <topic>` invokes the core `search()` composer
 // (PLAN → SCATTER → GATHER → SYNTHESIZE → PRESENT) with the injected
-// `searxngClient` (SearchPort), `modelClient` (ModelPort), and `presenterPort`
-// (PresenterPort). Snippets-only by default — no Firecrawl. Phase 7 adds
+// `searxngClient` (SearchPort), a model adapter bound to pi's active model (ModelPort),
+// and `presenterPort` (PresenterPort). Snippets-only by default — no Firecrawl. Phase 7 adds
 // `--read` evidence mode: when set, a bounded, diverse set (3–5 URLs) is
 // extracted via `scrapePort` (ScrapePort) and its markdown flows into
 // SYNTHESIZE. Firecrawl is never called unless --read is passed.
 
 import { search } from "prowl-core";
 import { presenterPort, type PiPresenterUi } from "./pi-ports.ts";
-
-// Adapter port objects injected into the core composer (Phase 6). Imported
-// for local use by the search handler; `presenterPort` is imported above.
-import { modelClient } from "./model-client.ts";
+import { modelPortFromContext } from "./model-client.ts";
 import { scrapePort } from "./firecrawl-client.ts";
 import { searxngClient } from "./searxng-client.ts";
 
@@ -36,9 +33,19 @@ interface PiExtensionApi {
   ): void;
 }
 
-/** Minimal command-context view: just the UI render surface Prowl uses. */
+/** Minimal command-context view: the UI render surface Prowl uses, plus the
+ * active model + credential registry it needs to run synthesis through pi's
+ * own model (see model-client.ts). At runtime pi passes the full context. */
 interface PiCommandContext {
   ui: PiPresenterUi;
+  model: { id: string; provider: string } | undefined;
+  modelRegistry: {
+    getApiKeyAndHeaders(model: { id: string; provider: string }): Promise<
+      | { ok: true; apiKey?: string; headers?: Record<string, string> }
+      | { ok: false; error: string }
+    >;
+  };
+  signal?: AbortSignal;
 }
 
 export default function (pi: PiExtensionApi): void {
@@ -85,12 +92,13 @@ export default function (pi: PiExtensionApi): void {
       try {
         // Core composer owns orchestration; adapters inject concrete ports.
         // Snippets-only by default; `scrape` is passed only when --read is set,
-        // so the default path makes zero Firecrawl calls.
+        // so the default path makes zero Firecrawl calls. The model adapter is
+        // built from the live pi context so Prowl uses pi's active model.
         await search(
           { query: rest, readMode },
           {
             search: searxngClient,
-            model: modelClient,
+            model: modelPortFromContext(ctx),
             present: presenter,
             scrape: readMode ? scrapePort : undefined,
           },

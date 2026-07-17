@@ -1,45 +1,78 @@
-// ModelPort adapter — single OpenAI-compatible model used for PLAN + SYNTHESIZE.
+// ModelPort adapter — uses pi's currently-selected model instead of a separate
+// OpenAI client. This lets Prowl run on whatever model pi is configured with
+// (e.g. Qwen 3.6-plus), with no PROWL_MODEL_API_KEY / PROWL_MODEL_BASE_URL needed.
 //
-// v0.1 uses one model for both query planning and synthesis, reached through any
-// OpenAI-compatible endpoint (Venice / OpenRouter / a local gateway). The default
-// model is Qwen 3.6-plus; override via PROWL_MODEL. Point PROWL_MODEL_BASE_URL at
-// your gateway and PROWL_MODEL_API_KEY at its key.
-//
-// Adapters own env config: core never touches process.env (per architecture
-// guidance). The OpenAI client is constructed LAZILY on first use, not at module
-// load — this lets the extension load (and /prowl register) even when no model
-// credentials are set, exactly like any other pi extension. A missing key only
-// surfaces as a clear error when a search actually needs the model.
+// Pattern mirrors pi's own example extensions (qna.ts): read `ctx.model`, resolve
+// its credentials through `ctx.modelRegistry.getApiKeyAndHeaders(model)`, and call
+// `complete()` from @earendil-works/pi-ai/compat. The adapter is built per-call
+// because it needs the live command context (model + registry), which only exists
+// inside the handler — not at extension load time.
 
-import OpenAI from "openai";
+import { complete, type UserMessage } from "@earendil-works/pi-ai/compat";
 import type { ModelPort } from "prowl-core";
 
-const MODEL = process.env.PROWL_MODEL ?? "qwen3.6-plus";
-const BASE_URL = process.env.PROWL_MODEL_BASE_URL;
-const API_KEY = process.env.PROWL_MODEL_API_KEY ?? "";
-
-// Lazily created on first generate() so importing this module never throws on
-// missing credentials (which would otherwise block the whole extension from loading).
-let client: OpenAI | null = null;
-
-function getClient(): OpenAI {
-  if (client) return client;
-  if (!API_KEY) {
-    throw new Error(
-      "Prowl model not configured: set PROWL_MODEL_API_KEY (and PROWL_MODEL_BASE_URL " +
-        "for a non-OpenAI gateway). Default model is qwen3.6-plus.",
-    );
-  }
-  client = new OpenAI({ apiKey: API_KEY, baseURL: BASE_URL });
-  return client;
+/**
+ * Minimal structural view of the pi command context Prowl needs: the active
+ * model, its credential registry, and the current abort signal. Mirrors the
+ * fields pi's ExtensionCommandContext exposes, without importing the full type
+ * (so the adapter stays decoupled and type-checks in isolation).
+ */
+export interface ProwlModelContext {
+  model: { id: string; provider: string } | undefined;
+  modelRegistry: {
+    getApiKeyAndHeaders(model: { id: string; provider: string }): Promise<
+      | { ok: true; apiKey?: string; headers?: Record<string, string> }
+      | { ok: false; error: string }
+    >;
+  };
+  signal?: AbortSignal;
 }
 
-export const modelClient: ModelPort = {
-  async generate(prompt: string, opts?: Record<string, unknown>) {
-    const res = await getClient().chat.completions.create({
-      model: (opts?.model as string) ?? MODEL,
-      messages: [{ role: "user", content: prompt }],
-    });
-    return res.choices[0]?.message?.content ?? "";
-  },
-};
+/**
+ * Build a ModelPort bound to pi's active model for this command invocation.
+ * Throws a clear error if no model is selected in pi (the user sets it there).
+ */
+export function modelPortFromContext(
+  ctx: ProwlModelContext,
+): ModelPort {
+  const model = ctx.model;
+  if (!model) {
+    throw new Error(
+      "Prowl needs a model: select one in pi (e.g. Qwen 3.6-plus). No model is currently active.",
+    );
+  }
+
+  return {
+    async generate(prompt: string): Promise<string> {
+      const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+      if (!auth.ok || !auth.apiKey) {
+        throw new Error(
+          auth.ok
+            ? `No API key configured in pi for ${model.provider}/${model.id}.`
+            : auth.error,
+        );
+      }
+
+      const userMessage: UserMessage = {
+        role: "user",
+        content: [{ type: "text", text: prompt }],
+        timestamp: Date.now(),
+      };
+
+      const response = await complete(
+        model as never,
+        { messages: [userMessage] },
+        {
+          apiKey: auth.apiKey,
+          headers: auth.headers,
+          signal: ctx.signal,
+        },
+      );
+
+      return response.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text)
+        .join("\n");
+    },
+  };
+}

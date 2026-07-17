@@ -4,19 +4,20 @@
 // ports to pi tools.
 //
 // Phase 2 spike proved pi command registration + argument parsing + rendering
-// work end-to-end (only `/prowl search <topic>` is wired; it does NO real
-// search or model work yet — it just echoes "registered: <topic>" via the
-// presenter). The spike's `createSpikePresenter` was promoted to a reusable
-// `presenterPort` factory in packages/pi/src/pi-ports.ts (Phase 4). Real
-// behavior lands in later phases (search pipeline → 5/6, model client → 3).
+// work end-to-end. Phase 4 promoted the spike's presenter into a reusable
+// `presenterPort` factory (packages/pi/src/pi-ports.ts). Phase 6 now wires the
+// real behavior: `/prowl search <topic>` invokes the core `search()` composer
+// (PLAN → SCATTER → GATHER → SYNTHESIZE → PRESENT) with the injected
+// `searxngClient` (SearchPort), `modelClient` (ModelPort), and `presenterPort`
+// (PresenterPort). Snippets-only by default — no Firecrawl in this phase.
 
+import { search } from "prowl-core";
 import { presenterPort, type PiPresenterUi } from "./pi-ports.ts";
 
-// Adapter port objects the minimal search handler injects. Real search/model
-// behavior wires these into the core composer (Phase 5) once it lands.
-export { modelClient } from "./model-client.ts";
-export { searxngClient } from "./searxng-client.ts";
-export { presenterPort } from "./pi-ports.ts";
+// Adapter port objects injected into the core composer (Phase 6). Imported
+// for local use by the search handler; `presenterPort` is imported above.
+import { modelClient } from "./model-client.ts";
+import { searxngClient } from "./searxng-client.ts";
 
 // Minimal structural view of the pi host surface (registration API + command
 // context). Deliberately avoids importing @earendil-works/pi-coding-agent so
@@ -56,7 +57,17 @@ export default function (pi: PiExtensionApi): void {
       }
 
       const presenter = presenterPort(ctx.ui);
-      await presenter.present("registered: " + rest);
+      try {
+        // Phase 6: real vertical slice. Core composer owns orchestration;
+        // adapters inject concrete ports. Snippets-only (no Firecrawl).
+        await search(
+          { query: rest },
+          { search: searxngClient, model: modelClient, present: presenter },
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        ctx.ui.notify(`Prowl search failed: ${message}`, "error");
+      }
     },
   });
 }

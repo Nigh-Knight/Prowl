@@ -34,6 +34,7 @@ export type { SearchDeps, SearchInput, SearchOutput } from "./commands.ts";
 // Ranking / selection policy.
 export {
   dedupeResults,
+  LITTER_ENGINES,
   normalizeResults,
   normalizeUrl,
   rankResults,

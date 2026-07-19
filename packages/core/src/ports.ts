@@ -13,6 +13,13 @@ export interface SearchResult {
    * step in read (`--read`) mode; absent in the default snippets-only path.
    */
   content?: string;
+  /**
+   * Read outcome in `--read` mode. `"read"` = successfully fetched and attached
+   * to `content`; `"failed"` = scrape error or dead URL (dropped from final
+   * citations); undefined on the default snippets-only path. Enables `--debug`
+   * to report read/failed per URL (Issue 9).
+   */
+  readStatus?: "read" | "failed";
 }
 
 /** Multi-engine search port. */
@@ -66,7 +73,28 @@ export interface UserPromptPort {
   ask(question: string): Promise<string>;
 }
 
+/** Structured payload the presenter renders as the final Prowl result. */
+export interface PresenterResult {
+  /** The user's original search query — shown in the durable transcript entry. */
+  query: string;
+  /** Synthesized summary prose (inline `[n]` citations; no `Sources:` list). */
+  summary: string;
+  /** Bounded, diverse, relevant sources rendered as the single Sources list. */
+  sources: SearchResult[];
+}
+
+/** Structured stage telemetry for `--debug` (no secrets / chain-of-thought). */
+export interface TelemetryEvent {
+  stage: "plan" | "scatter" | "gather" | "rerank" | "extract" | "present";
+  detail: string;
+  counts?: Record<string, number>;
+  reasons?: string[];
+}
+
 /** Render final output. */
 export interface PresenterPort {
-  present(content: string): Promise<void>;
+  /** Render the structured result as a durable, persisted transcript entry. */
+  present(result: PresenterResult): Promise<void>;
+  /** Optional transient progress text (e.g. "Searching…"). Bound to ui.notify. */
+  progress?(message: string): Promise<void>;
 }

@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "prowl-core": "workspace:*",
-    "@earendil-works/pi-ai": "^0.80.10"
+    "@earendil-works/pi-ai": "^0.80.10",
+    "@earendil-works/pi-tui": "^0.80.10"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"

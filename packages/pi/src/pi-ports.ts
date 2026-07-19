@@ -1,12 +1,10 @@
-// Minimal PresenterPort adapter bound to the pi host render surface.
+// PresenterPort adapter bound to pi's appendEntry + ui.notify.
 //
-// Phase 4: turns the Phase 2 spike (which proved `ctx.ui.notify` works as the
-// render surface) into a reusable, structurally-typed PresenterPort. We avoid
-// importing from @earendil-works/pi-coding-agent so the adapter stays decoupled
-// from pi internals and type-checks without the pi package installed locally
-// (per architecture guidance: "Adapters own Pi UI", structural typing only).
+// Phase 6: Rebind from the ephemeral gray/muted ui.notify channel to
+// pi.appendEntry("prowl-result", ...) for durable, normally-styled transcript
+// entries. Progress messages remain on ui.notify (ephemeral, transient).
 
-import type { PresenterPort } from "prowl-core";
+import type { PresenterPort, PresenterResult } from "prowl-core";
 
 /**
  * Minimal structural view of the pi UI surface Prowl needs to render output.
@@ -17,17 +15,26 @@ export interface PiPresenterUi {
 }
 
 /**
- * Build a PresenterPort bound to the live pi command context's UI surface.
- * The host render call is `notify` (not a `present` method) — confirmed in
- * the Phase 2 spike against the real pi runtime.
+ * Build a PresenterPort bound to the live pi command context.
  *
- * Returns a `PresenterPort` so Phase 5's core `search` composer can inject it
- * unchanged alongside `searxngClient` (SearchPort) and `modelClient` (ModelPort).
+ * - `present` writes a durable, normally-styled transcript entry via
+ *   `pi.appendEntry("prowl-result", ...)` — not gray/muted, not ephemeral.
+ * - `progress` sends transient status to `ui.notify` (gray/muted ephemeral).
  */
-export function presenterPort(ui: PiPresenterUi): PresenterPort {
+export function presenterPort(
+  pi: { appendEntry(customType: string, data?: unknown): void },
+  ui: PiPresenterUi,
+): PresenterPort {
   return {
-    async present(content: string): Promise<void> {
-      ui.notify(content, "info");
+    async present(result: PresenterResult): Promise<void> {
+      pi.appendEntry("prowl-result", {
+        query: result.query,
+        summary: result.summary,
+        sources: result.sources,
+      });
+    },
+    async progress(message: string): Promise<void> {
+      ui.notify(message, "info");
     },
   };
 }

@@ -19,10 +19,27 @@ export function normalizeUrl(url: string): string {
   }
 }
 
-/** Host (domain) of a URL, used for diversity capping. */
-function hostOf(url: string): string {
+/**
+ * Root (registrable) domain of a URL, used for diversity capping so that
+ * `forum.example.com` and `example.com` count as one brand (Issue 3). Heuristic
+ * eTLD+1: handles a small known set of multi-part suffixes (co.uk, com.au, …);
+ * falls back to the last two labels. IPv4 literals and `localhost` pass through.
+ */
+const MULTI_PART_TLDS = new Set([
+  "co.uk", "org.uk", "ac.uk", "gov.uk",
+  "com.au", "net.au", "org.au", "edu.au",
+  "co.nz", "co.jp", "com.br", "co.za", "com.mx",
+]);
+
+export function rootDomain(url: string): string {
   try {
-    return new URL(url).host.toLowerCase();
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === "localhost" || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return host;
+    const labels = host.split(".");
+    if (labels.length <= 2) return host;
+    const lastTwo = labels.slice(-2).join(".");
+    if (MULTI_PART_TLDS.has(lastTwo)) return labels.slice(-3).join(".");
+    return lastTwo;
   } catch {
     return url.toLowerCase();
   }
@@ -54,7 +71,7 @@ export function dedupeResults(results: SearchResult[]): SearchResult[] {
 }
 
 // Engines that skew toward the litter web (PRD §2): favored in ranking.
-const LITTER_ENGINES = new Set([
+export const LITTER_ENGINES = new Set([
   "marginalia",
   "wiby",
   "mojeek",
@@ -94,21 +111,21 @@ export function rankResults(results: SearchResult[]): SearchResult[] {
 /**
  * Select a bounded, deduplicated, ranked subset for the SYNTHESIZE context.
  * Caps the number of snippets fed to the model (v0.1 default 8) while
- * maximizing domain diversity (at most 2 results per host).
+ * maximizing root-domain diversity (at most 2 results per root domain).
  */
 export function selectForSynthesis(
   results: SearchResult[],
   limit = 8,
 ): SearchResult[] {
   const ranked = rankResults(results);
-  const perHost = new Map<string, number>();
+  const perRoot = new Map<string, number>();
   const out: SearchResult[] = [];
   for (const r of ranked) {
     if (out.length >= limit) break;
-    const host = hostOf(r.url);
-    const seen = perHost.get(host) ?? 0;
-    if (seen >= 2) continue; // cap per-domain for diversity
-    perHost.set(host, seen + 1);
+    const root = rootDomain(r.url);
+    const seen = perRoot.get(root) ?? 0;
+    if (seen >= 2) continue; // cap per root domain for diversity (Issue 3)
+    perRoot.set(root, seen + 1);
     out.push(r);
   }
   return out;

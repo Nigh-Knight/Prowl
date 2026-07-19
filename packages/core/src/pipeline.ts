@@ -221,6 +221,8 @@ export function buildSynthesisPrompt(
     "accounts, archives, and niche sources over SEO/commercial content.",
     "Cite sources inline as [n] matching the numbering. Do NOT append a",
     '"Sources:" list — the sources are rendered separately by the client.',
+    "If no snippets are provided, say you found no relevant sources; do not",
+    "answer from prior knowledge.",
     "",
     `Query: ${query}`,
     "",

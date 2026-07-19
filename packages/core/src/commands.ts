@@ -5,22 +5,17 @@
 // (no Firecrawl); read (`--read`) mode adds a bounded EXTRACT step.
 
 import type {
-  ModelPort,
-  PresenterPort,
-  ScrapePort,
-  SearchPort,
-  SearchResult,
+  ModelPort, PresenterPort, ScrapePort, SearchPort, SearchResult, TelemetryEvent,
 } from "./ports.ts";
 import {
   extract as extractStep,
-  formatSearchOutput,
   gather as gatherStep,
   plan as planStep,
   present as presentStep,
+  rerank as rerankStep,
   scatter as scatterStep,
   synthesize as synthesizeStep,
 } from "./pipeline.ts";
-import type { QueryPlan } from "./pipeline.ts";
 import { normalizeUrl, selectForSynthesis } from "./ranking.ts";
 import { selectForExtraction } from "./selection.ts";
 
@@ -39,6 +34,8 @@ export interface SearchDeps {
   present: PresenterPort;
   /** Optional — only used in read mode. Omit for the default snippets-only path. */
   scrape?: ScrapePort;
+  /** Optional — emit structured stage telemetry (queries, engines, counts, reasons). */
+  debug?: (event: TelemetryEvent) => void;
 }
 
 /** Max URLs scraped in read (`--read`) mode (plan allows 3–5). */
@@ -51,7 +48,7 @@ export interface SearchOutput {
 }
 
 /**
- * `search` composer — PLAN → SCATTER → GATHER → [EXTRACT] → SYNTHESIZE → PRESENT.
+ * `search` composer — PLAN → SCATTER → GATHER → RERANK → [EXTRACT] → SYNTHESIZE → PRESENT.
  *
  * Default is snippets-only (no Firecrawl). When `input.readMode` is set and a
  * `scrape` port is supplied, a bounded, diverse set of results is extracted
@@ -63,34 +60,37 @@ export async function search(
   input: SearchInput,
   deps: SearchDeps,
 ): Promise<SearchOutput> {
-  // PLAN — reform the query into a query set via the model.
-  const planResult: QueryPlan = await planStep(input.query, deps.model);
+  await deps.present.progress?.("Planning queries…");
+  const planResult = await planStep(input.query, deps.model);
 
-  // SCATTER — fan the query set out to the search port.
+  await deps.present.progress?.("Searching SearXNG…");
   const raw = await scatterStep(deps.search, planResult.querySet, input.engines);
 
-  // GATHER — normalize, dedupe, and rank the scattered results.
+  await deps.present.progress?.("Ranking and deduplicating…");
   const gathered = await gatherStep(raw);
 
+  await deps.present.progress?.("Filtering relevance…");
+  const reranked = await rerankStep(input.query, gathered, deps.model);
+  let relevant = reranked.kept;
+
   // EXTRACT (read mode only) — bounded, diverse, conditional Firecrawl.
-  // Gated on BOTH `readMode` and a supplied `scrape` port, so the default
-  // snippets-only path performs zero Firecrawl calls. On success the selected
-  // results are enriched with full markdown (`content`) for synthesis.
-  let synthesisInput: SearchResult[] = gathered;
   if (input.readMode && deps.scrape) {
-    const selected = selectForExtraction(gathered, EXTRACTION_BUDGET);
+    await deps.present.progress?.("Reading pages…");
+    const selected = selectForExtraction(relevant, EXTRACTION_BUDGET);
     const enriched = await extractStep(deps.scrape, selected);
     const byUrl = new Map(enriched.map((r) => [normalizeUrl(r.url), r]));
-    synthesisInput = gathered.map((r) => byUrl.get(normalizeUrl(r.url)) ?? r);
+    relevant = relevant.map((r) => byUrl.get(normalizeUrl(r.url)) ?? r);
   }
 
-  // SYNTHESIZE — call the model with the gathered snippets / extracted content.
+  // In --read mode, keep only successfully-read results (Issue 9).
+  const synthesisInput = input.readMode
+    ? relevant.filter((r) => r.readStatus === "read")
+    : relevant;
+
+  await deps.present.progress?.("Synthesizing findings…");
   const summary = await synthesizeStep(deps.model, input.query, synthesisInput);
-
-  // PRESENT — render the summary + a bounded source list.
   const shown = selectForSynthesis(synthesisInput, 8);
-  const content = formatSearchOutput(summary, shown);
-  await presentStep(deps.present, content);
-
+  deps.debug?.({ stage: "present", detail: "rendering result", counts: { shown: shown.length } });
+  await presentStep(deps.present, { query: input.query, summary, sources: shown });
   return { summary, sources: synthesisInput };
 }

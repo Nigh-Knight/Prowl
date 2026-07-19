@@ -14,13 +14,14 @@ export const searxngClient: SearchPort = {
     if (!res.ok) throw new Error(`SearXNG error: ${res.status}`);
 
     const data = (await res.json()) as {
-      results: Array<{ title?: string; url?: string; content?: string }>;
+      results: Array<{ title?: string; url?: string; content?: string; engine?: string }>;
     };
 
     return data.results.map((r) => ({
       title: r.title ?? "(no title)",
       url: r.url ?? "",
       snippet: r.content ?? "",
+      engine: r.engine,
     }));
   },
 };

@@ -21,11 +21,12 @@ export {
   parseQueryPlan,
   plan,
   present,
+  rerank,
   scatter,
   synthesize,
   buildSynthesisPrompt,
 } from "./pipeline.ts";
-export type { QueryPlan } from "./pipeline.ts";
+export type { QueryPlan, RerankResult } from "./pipeline.ts";
 
 // Command composers.
 export { search, EXTRACTION_BUDGET } from "./commands.ts";
@@ -38,6 +39,7 @@ export {
   normalizeResults,
   normalizeUrl,
   rankResults,
+  rootDomain,
   selectForSynthesis,
 } from "./ranking.ts";
 export { selectForExtraction } from "./selection.ts";

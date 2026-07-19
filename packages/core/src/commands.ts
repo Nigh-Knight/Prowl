@@ -83,9 +83,18 @@ export async function search(
   }
 
   // In --read mode, keep only successfully-read results (Issue 9).
-  const synthesisInput = input.readMode
+  // Only filters when a scrape port was actually used; without a scrape port,
+  // readMode falls back to snippets-only (no results have readStatus).
+  const synthesisInput = input.readMode && deps.scrape
     ? relevant.filter((r) => r.readStatus === "read")
     : relevant;
+
+  // Empty-result guard (Issue 10): no usable sources → say so, no uncited model answer.
+  if (synthesisInput.length === 0) {
+    await deps.present.progress?.("No sources found.");
+    await presentStep(deps.present, { query: input.query, summary: "No sources found.", sources: [] });
+    return { summary: "No sources found.", sources: [] };
+  }
 
   await deps.present.progress?.("Synthesizing findings…");
   const summary = await synthesizeStep(deps.model, input.query, synthesisInput);

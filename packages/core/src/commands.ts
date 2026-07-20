@@ -63,7 +63,7 @@ export async function search(
   deps: SearchDeps,
 ): Promise<SearchOutput> {
   await deps.present.setStatus?.("prowl-stage", "\u{1F4CB} Planning queries\u2026");
-  await deps.present.progress?.("Planning queries…");
+  await deps.present.progress?.("\u{1F4CB} Planning queries\u2026");
   const planResult = await planStep(input.query, deps.model);
   deps.debug?.({
     stage: "plan",
@@ -74,17 +74,18 @@ export async function search(
   });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Searching SearXNG\u2026");
-  await deps.present.progress?.("Searching SearXNG…");
+  await deps.present.progress?.("\u{1F50D} Searching SearXNG\u2026");
   const raw = await scatterStep(deps.search, planResult.querySet, input.engines);
   deps.debug?.({
     stage: "scatter",
     detail: `scattered ${planResult.querySet.length} queries`,
     counts: { queries: planResult.querySet.length, results: raw.length },
+    queries: planResult.querySet,
     rawSearchResults: raw,
   });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F4CA} Ranking and deduplicating\u2026");
-  await deps.present.progress?.("Ranking and deduplicating…");
+  await deps.present.progress?.("\u{1F4CA} Ranking and deduplicating\u2026");
   const gathered = await gatherStep(raw);
   deps.debug?.({
     stage: "gather",
@@ -93,7 +94,7 @@ export async function search(
   });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Filtering relevance\u2026");
-  await deps.present.progress?.("Filtering relevance…");
+  await deps.present.progress?.("\u{1F50D} Filtering relevance\u2026");
   const reranked = await rerankStep(input.query, gathered, deps.model);
   let relevant = reranked.kept;
   deps.debug?.({
@@ -106,7 +107,7 @@ export async function search(
   // EXTRACT (read mode only) — bounded, diverse, conditional Firecrawl.
   if (input.readMode && deps.scrape) {
     await deps.present.setStatus?.("prowl-stage", "\u{1F4D6} Reading pages\u2026");
-    await deps.present.progress?.("Reading pages…");
+    await deps.present.progress?.("\u{1F4D6} Reading pages\u2026");
     const selected = selectForExtraction(relevant, EXTRACTION_BUDGET);
     const enriched = await extractStep(deps.scrape, selected);
     const byUrl = new Map(enriched.map((r) => [normalizeUrl(r.url), r]));
@@ -135,7 +136,7 @@ export async function search(
   }
 
   await deps.present.setStatus?.("prowl-stage", "\u270F\uFE0F Synthesizing findings\u2026");
-  await deps.present.progress?.("Synthesizing findings…");
+  await deps.present.progress?.("\u270F\uFE0F Synthesizing findings\u2026");
 
   // ── SYNTHESIZE with optional streaming ──
   // When both the model and presenter support streaming, forward incremental

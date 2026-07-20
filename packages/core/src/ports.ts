@@ -102,6 +102,8 @@ export interface TelemetryEvent {
   rawResponse?: string;
   /** Raw search results for the scatter/gather stages (non-normalized). */
   rawSearchResults?: SearchResult[];
+  /** The query strings sent to the search engine (scatter stage). */
+  queries?: string[];
 }
 
 /** Render final output. */

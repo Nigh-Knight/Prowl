@@ -46,10 +46,11 @@ export function presenterPort(
     async setStatus(key: string, text: string | undefined): Promise<void> {
       ui.setStatus(key, text);
     },
-    async stream(chunk: string): Promise<void> {
-      // Forward incremental text chunks via notify for immediate visibility.
-      // Phase 5 will refine this with proper TUI streaming text append.
-      ui.notify(chunk, "info");
+    async stream(_chunk: string): Promise<void> {
+      // Streaming is handled by the composer: chunks are accumulated in
+      // commands.ts and presented as a single final result via present().
+      // No per-chunk notify needed — that would create noisy ephemeral
+      // messages instead of a clean paragraph.
     },
   };
 }

@@ -312,12 +312,12 @@ describe("search composer — empty-result guard", () => {
   });
 });
 
-// ── parseQueryPlan (Q4: cap 5) ────────────────────────────────────────────────
+// ── parseQueryPlan (Q4: cap 12) ───────────────────────────────────────────────
 
 describe("parseQueryPlan", () => {
-  it("caps at 5 (was 8)", () => {
-    const lots = JSON.stringify(Array.from({ length: 9 }, (_, i) => `q${i}`));
-    expect(parseQueryPlan(lots, "fallback").length).toBe(5);
+  it("caps at 12 (was 5)", () => {
+    const lots = JSON.stringify(Array.from({ length: 15 }, (_, i) => `q${i}`));
+    expect(parseQueryPlan(lots, "fallback").length).toBe(12);
   });
 
   it("returns [fallback] for empty input", () => {

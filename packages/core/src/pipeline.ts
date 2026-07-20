@@ -31,7 +31,7 @@ function buildPlanPrompt(query: string): string {
   return [
     "You are a metasearch query planner for the litter web — the",
     "non-commercial, personal, archival corners of the open web.",
-    "Given the user's query, return a JSON array of 1 to 5 search",
+    "Given the user's query, return a JSON array of 1 to 12 search",
     "query strings (same language as the user) that best surface",
     "personal accounts, archives, and niche sources.",
     'Respond with ONLY the JSON array, e.g. ["query one","query two"].',
@@ -51,7 +51,7 @@ export function parseQueryPlan(raw: string, fallback: string): string[] {
       const strings = parsed
         .map((x) => (typeof x === "string" ? x.trim() : ""))
         .filter((x) => x.length > 0);
-      if (strings.length > 0) return strings.slice(0, 5);
+      if (strings.length > 0) return strings.slice(0, 12);
     }
   } catch {
     // not JSON — fall through to line-based parsing
@@ -64,7 +64,7 @@ export function parseQueryPlan(raw: string, fallback: string): string[] {
     .split(/[\n,]/)
     .map((s) => s.replace(/^["'\s]+|["'\s]+$/g, "").trim())
     .filter((s) => s.length > 0);
-  if (lines.length > 0) return lines.slice(0, 5);
+  if (lines.length > 0) return lines.slice(0, 12);
 
   return [fallback];
 }

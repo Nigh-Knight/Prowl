@@ -18,6 +18,7 @@ import { scrapePort } from "./firecrawl-client.ts";
 import { searxngClient } from "./searxng-client.ts";
 import { parseProwlArgs } from "./args.ts";
 import { registerProwlResultRenderer } from "./result-renderer.ts";
+import { createDebugSink } from "./debug-writer.ts";
 
 // Minimal structural view of the pi host surface (registration API + command
 // context). Deliberately avoids importing @earendil-works/pi-coding-agent so
@@ -89,12 +90,17 @@ export default function (pi: PiExtensionApi): void {
 
       // Structured debug telemetry sink (--debug mode, Issue 6/11).
       const debugSink = debug
-        ? (event: TelemetryEvent) => {
-            const counts = event.counts
-              ? ` (${Object.entries(event.counts).map(([k, v]) => `${k}=${v}`).join(", ")})`
-              : "";
-            ctx.ui.notify(`[prowl:${event.stage}] ${event.detail}${counts}`, "info");
-          }
+        ? ((() => {
+            const sink = createDebugSink();
+            return (event: TelemetryEvent) => {
+              sink.write(event);
+              // Also notify in-terminal for immediate visibility
+              const counts = event.counts
+                ? ` (${Object.entries(event.counts).map(([k, v]) => `${k}=${v}`).join(", ")})`
+                : "";
+              ctx.ui.notify(`[prowl:${event.stage}] ${event.detail}${counts}`, "info");
+            };
+          })())
         : undefined;
 
       try {

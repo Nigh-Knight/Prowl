@@ -15,6 +15,7 @@ import {
   rerank as rerankStep,
   scatter as scatterStep,
   synthesize as synthesizeStep,
+  buildPlanPrompt,
   buildSynthesisPrompt,
 } from "./pipeline.ts";
 import { normalizeUrl, selectForSynthesis } from "./ranking.ts";
@@ -64,19 +65,43 @@ export async function search(
   await deps.present.setStatus?.("prowl-stage", "\u{1F4CB} Planning queries\u2026");
   await deps.present.progress?.("Planning queries…");
   const planResult = await planStep(input.query, deps.model);
+  deps.debug?.({
+    stage: "plan",
+    detail: `planned ${planResult.querySet.length} queries`,
+    counts: { queries: planResult.querySet.length },
+    prompt: buildPlanPrompt(input.query),
+    rawResponse: "",
+  });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Searching SearXNG\u2026");
   await deps.present.progress?.("Searching SearXNG…");
   const raw = await scatterStep(deps.search, planResult.querySet, input.engines);
+  deps.debug?.({
+    stage: "scatter",
+    detail: `scattered ${planResult.querySet.length} queries`,
+    counts: { queries: planResult.querySet.length, results: raw.length },
+    rawSearchResults: raw,
+  });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F4CA} Ranking and deduplicating\u2026");
   await deps.present.progress?.("Ranking and deduplicating…");
   const gathered = await gatherStep(raw);
+  deps.debug?.({
+    stage: "gather",
+    detail: `deduped ${raw.length} → ${gathered.length} results`,
+    counts: { raw: raw.length, gathered: gathered.length },
+  });
 
   await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Filtering relevance\u2026");
   await deps.present.progress?.("Filtering relevance…");
   const reranked = await rerankStep(input.query, gathered, deps.model);
   let relevant = reranked.kept;
+  deps.debug?.({
+    stage: "rerank",
+    detail: `reranked ${gathered.length} → ${reranked.kept.length} kept`,
+    counts: { input: gathered.length, kept: reranked.kept.length, dropped: reranked.dropped.length },
+    reasons: reranked.dropped.map((d) => d.url),
+  });
 
   // EXTRACT (read mode only) — bounded, diverse, conditional Firecrawl.
   if (input.readMode && deps.scrape) {
@@ -86,6 +111,12 @@ export async function search(
     const enriched = await extractStep(deps.scrape, selected);
     const byUrl = new Map(enriched.map((r) => [normalizeUrl(r.url), r]));
     relevant = relevant.map((r) => byUrl.get(normalizeUrl(r.url)) ?? r);
+    deps.debug?.({
+      stage: "extract",
+      detail: `extracted ${selected.length} pages`,
+      counts: { selected: selected.length },
+      rawSearchResults: enriched,
+    });
   }
 
   // In --read mode, keep only successfully-read results (Issue 9).

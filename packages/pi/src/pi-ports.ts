@@ -1,4 +1,4 @@
-// PresenterPort adapter bound to pi's appendEntry + ui.notify.
+// PresenterPort adapter bound to pi's appendEntry + ui.notify + setWidget.
 //
 // Phase 6: Rebind from the ephemeral gray/muted ui.notify channel to
 // pi.appendEntry("prowl-result", ...) for durable, normally-styled transcript
@@ -18,6 +18,12 @@ export interface PiPresenterUi {
    * Pattern: ctx.ui.setStatus("status-demo", theme.fg("dim", "Ready"))
    */
   setStatus(key: string, text: string | undefined): void;
+  /**
+   * Set or clear a persistent widget above the editor.
+   * Pass a string array for simple text, or undefined to clear.
+   * Pattern: ctx.ui.setWidget("prowl-stream", ["Streaming text..."])
+   */
+  setWidget?(key: string, content: string[] | undefined): void;
 }
 
 /**
@@ -27,13 +33,21 @@ export interface PiPresenterUi {
  *   `pi.appendEntry("prowl-result", ...)` — not gray/muted, not ephemeral.
  * - `progress` sends transient status to `ui.notify` (gray/muted ephemeral).
  * - `setStatus` writes/clears a persistent footer status line via `ui.setStatus`.
+ * - `stream` updates a live widget with the accumulating synthesis text so the
+ *   user sees text appear incrementally (like ai model streaming).
  */
 export function presenterPort(
   pi: { appendEntry(customType: string, data?: unknown): void },
   ui: PiPresenterUi,
 ): PresenterPort {
+  // Buffer for accumulating streaming text chunks.
+  let streamBuffer = "";
+
   return {
     async present(result: PresenterResult): Promise<void> {
+      // Clear any live streaming widget before writing the final entry.
+      ui.setWidget?.("prowl-stream", undefined);
+      streamBuffer = "";
       pi.appendEntry("prowl-result", {
         query: result.query,
         summary: result.summary,
@@ -46,11 +60,10 @@ export function presenterPort(
     async setStatus(key: string, text: string | undefined): Promise<void> {
       ui.setStatus(key, text);
     },
-    async stream(_chunk: string): Promise<void> {
-      // Streaming is handled by the composer: chunks are accumulated in
-      // commands.ts and presented as a single final result via present().
-      // No per-chunk notify needed — that would create noisy ephemeral
-      // messages instead of a clean paragraph.
+    async stream(chunk: string): Promise<void> {
+      // Append chunk and update the widget so the user sees text grow live.
+      streamBuffer += chunk;
+      ui.setWidget?.("prowl-stream", [streamBuffer]);
     },
   };
 }

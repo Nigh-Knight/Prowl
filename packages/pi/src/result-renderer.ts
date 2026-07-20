@@ -92,8 +92,10 @@ export function registerProwlResultRenderer(pi: {
       // Empty line
       box.addChild(new Text(" ", 0, 0));
 
-      // Query label — dim color
-      box.addChild(new Text(theme.fg("dim", line(2)), 0, 0));
+      // Query label — accent label + text-colored query
+      const queryText = data.query ?? "(unknown)";
+      const queryLabel = theme.fg("accent", "Query: ") + theme.fg("text", queryText);
+      box.addChild(new Text(queryLabel, 0, 0));
 
       // Separator — dim horizontal line
       box.addChild(new Text(theme.fg("dim", line(3)), 0, 0));

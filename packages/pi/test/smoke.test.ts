@@ -48,4 +48,37 @@ describe("prowl-pi adapter smoke tests (live Docker stack)", () => {
     const mod = require("../src/model-client.ts");
     expect(typeof mod.modelPortFromContext).toBe("function");
   });
+
+  it("debug writer creates valid ndjson file", async () => {
+    const { createDebugSink } = await import("../src/debug-writer.ts");
+    const { existsSync, readFileSync, unlinkSync } = await import("node:fs");
+    const { homedir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const DEBUG_PATH = join(homedir(), ".prowl", "debug-last.jsonl");
+
+    // Clean up before test
+    try { unlinkSync(DEBUG_PATH); } catch { /* ok */ }
+
+    const sink = createDebugSink();
+    sink.write({ stage: "plan", detail: "test event", counts: { queries: 1 } });
+    sink.write({ stage: "present", detail: "done" });
+    sink.close();
+
+    expect(existsSync(DEBUG_PATH)).toBe(true);
+    const content = readFileSync(DEBUG_PATH, "utf-8");
+    const lines = content.trim().split("\n");
+    expect(lines.length).toBe(2);
+
+    const first = JSON.parse(lines[0]!);
+    expect(first.stage).toBe("plan");
+    expect(first.detail).toBe("test event");
+    expect(first.timestamp).toBeDefined();
+
+    const second = JSON.parse(lines[1]!);
+    expect(second.stage).toBe("present");
+
+    // Clean up
+    try { unlinkSync(DEBUG_PATH); } catch { /* ok */ }
+  });
 });

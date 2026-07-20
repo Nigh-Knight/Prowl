@@ -18,8 +18,10 @@ import {
   selectForExtraction,
   selectForSynthesis,
   parseQueryPlan,
-  rootDomain,
+  rankResults,
   rerank,
+  rootDomain,
+  scoreResult,
 } from "prowl-core";
 import type {
   ModelPort,
@@ -353,6 +355,99 @@ describe("rootDomain", () => {
   it("passes through IPv4 and localhost unchanged", () => {
     expect(rootDomain("http://127.0.0.1:8080/path")).toBe("127.0.0.1");
     expect(rootDomain("http://localhost:3000")).toBe("localhost");
+  });
+
+  it("handles Korean .co.kr root domain", () => {
+    expect(rootDomain("http://blog.example.co.kr")).toBe("example.co.kr");
+    expect(rootDomain("http://example.or.kr")).toBe("example.or.kr");
+  });
+
+  it("handles Chinese .com.cn root domain", () => {
+    expect(rootDomain("http://example.com.cn")).toBe("example.com.cn");
+    expect(rootDomain("http://blog.example.edu.cn")).toBe("example.edu.cn");
+  });
+
+  it("handles Indian .co.in root domain", () => {
+    expect(rootDomain("http://example.co.in")).toBe("example.co.in");
+    expect(rootDomain("http://blog.example.org.in")).toBe("example.org.in");
+  });
+
+  it("handles Taiwanese .com.tw root domain", () => {
+    expect(rootDomain("http://example.com.tw")).toBe("example.com.tw");
+    expect(rootDomain("http://blog.example.edu.tw")).toBe("example.edu.tw");
+  });
+
+  it("handles Indonesian .co.id root domain", () => {
+    expect(rootDomain("http://example.co.id")).toBe("example.co.id");
+    expect(rootDomain("http://blog.example.ac.id")).toBe("example.ac.id");
+  });
+
+  it("handles Hong Kong .com.hk root domain", () => {
+    expect(rootDomain("http://example.com.hk")).toBe("example.com.hk");
+  });
+
+  it("handles Singapore .com.sg root domain", () => {
+    expect(rootDomain("http://example.com.sg")).toBe("example.com.sg");
+  });
+
+  it("preserves existing TLDs after expansion", () => {
+    expect(rootDomain("http://example.co.uk")).toBe("example.co.uk");
+    expect(rootDomain("http://example.com.au")).toBe("example.com.au");
+    expect(rootDomain("http://example.co.jp")).toBe("example.co.jp");
+    expect(rootDomain("http://example.com.br")).toBe("example.com.br");
+  });
+
+  it("leaves standard TLDs unaffected", () => {
+    expect(rootDomain("http://example.com")).toBe("example.com");
+    expect(rootDomain("http://example.org")).toBe("example.org");
+  });
+});
+
+// ── streaming fallback ─────────────────────────────────────────────────────────
+
+describe("streaming fallback", () => {
+  it("falls back to buffered synthesize when generateStream is absent", async () => {
+    const calls: Call[] = [];
+    await search(
+      { query: "test", readMode: false },
+      {
+        search: makeSearch(calls, sampleResults()),
+        model: makeModel(calls), // no generateStream → falls back to buffered generate()
+        present: makePresenter(calls),
+      },
+    );
+    const presentCall = calls.find((c) => c.port === "presenter");
+    expect(presentCall).toBeDefined();
+    const result = presentCall!.result as PresenterResult;
+    expect(result.summary).toContain("SYNTHESIZED SUMMARY");
+  });
+});
+
+// ── scoreResult quality threshold (Issue 5) ────────────────────────────────────
+
+describe("scoreResult quality threshold", () => {
+  it("returns 0 for below-threshold result (short snippet, no title)", () => {
+    expect(scoreResult({ title: "", url: "http://example.com/a", snippet: "short" })).toBe(0);
+  });
+
+  it("passes threshold with meaningful snippet (>= 20 chars) even without title", () => {
+    expect(scoreResult({ title: "", url: "http://example.com/b", snippet: "a".repeat(25) })).toBeGreaterThanOrEqual(2);
+  });
+
+  it("passes threshold with snippet + title", () => {
+    const score = scoreResult({ title: "Test", url: "http://example.com/c", snippet: "a".repeat(25) });
+    expect(score).toBeGreaterThanOrEqual(3);
+  });
+
+  it("rankResults places below-threshold result after higher-scoring results", () => {
+    const results = rankResults([
+      { title: "", url: "http://example.com/a", snippet: "short" },
+      { title: "Good", url: "http://example.com/b", snippet: "a".repeat(25) },
+    ]);
+    // The below-threshold result should be at the bottom (score 0)
+    // The good result should be first (score >= 3)
+    expect(results.length).toBe(2);
+    expect(results[0]!.url).toBe("http://example.com/b");
   });
 });
 

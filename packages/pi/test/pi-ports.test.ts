@@ -16,6 +16,7 @@ describe("presenterPort", () => {
     };
     const ui = {
       notify(_message: string, _level?: "info" | "warning" | "error") {},
+      setStatus(_key: string, _text: string | undefined) {},
     };
 
     const port = presenterPort(pi, ui);
@@ -53,6 +54,7 @@ describe("presenterPort", () => {
       ) {
         notifyCalls.push([message, level]);
       },
+      setStatus(_key: string, _text: string | undefined) {},
     };
 
     const port = presenterPort(pi, ui);
@@ -67,7 +69,7 @@ describe("presenterPort", () => {
   it("handles empty sources list", async () => {
     const appendCalls: Array<[string, unknown]> = [];
     const pi = { appendEntry(customType: string, data?: unknown) { appendCalls.push([customType, data]); } };
-    const ui = { notify() {} };
+    const ui = { notify() {}, setStatus() {} };
 
     const port = presenterPort(pi, ui);
     await port.present({

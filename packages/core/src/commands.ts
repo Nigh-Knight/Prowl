@@ -60,21 +60,26 @@ export async function search(
   input: SearchInput,
   deps: SearchDeps,
 ): Promise<SearchOutput> {
+  await deps.present.setStatus?.("prowl-stage", "\u{1F4CB} Planning queries\u2026");
   await deps.present.progress?.("Planning queries…");
   const planResult = await planStep(input.query, deps.model);
 
+  await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Searching SearXNG\u2026");
   await deps.present.progress?.("Searching SearXNG…");
   const raw = await scatterStep(deps.search, planResult.querySet, input.engines);
 
+  await deps.present.setStatus?.("prowl-stage", "\u{1F4CA} Ranking and deduplicating\u2026");
   await deps.present.progress?.("Ranking and deduplicating…");
   const gathered = await gatherStep(raw);
 
+  await deps.present.setStatus?.("prowl-stage", "\u{1F50D} Filtering relevance\u2026");
   await deps.present.progress?.("Filtering relevance…");
   const reranked = await rerankStep(input.query, gathered, deps.model);
   let relevant = reranked.kept;
 
   // EXTRACT (read mode only) — bounded, diverse, conditional Firecrawl.
   if (input.readMode && deps.scrape) {
+    await deps.present.setStatus?.("prowl-stage", "\u{1F4D6} Reading pages\u2026");
     await deps.present.progress?.("Reading pages…");
     const selected = selectForExtraction(relevant, EXTRACTION_BUDGET);
     const enriched = await extractStep(deps.scrape, selected);
@@ -91,15 +96,21 @@ export async function search(
 
   // Empty-result guard (Issue 10): no usable sources → say so, no uncited model answer.
   if (synthesisInput.length === 0) {
+    await deps.present.setStatus?.("prowl-stage", undefined);
     await deps.present.progress?.("No sources found.");
     await presentStep(deps.present, { query: input.query, summary: "No sources found.", sources: [] });
     return { summary: "No sources found.", sources: [] };
   }
 
+  await deps.present.setStatus?.("prowl-stage", "\u270F\uFE0F Synthesizing findings\u2026");
   await deps.present.progress?.("Synthesizing findings…");
   const summary = await synthesizeStep(deps.model, input.query, synthesisInput);
   const shown = selectForSynthesis(synthesisInput, 8);
   deps.debug?.({ stage: "present", detail: "rendering result", counts: { shown: shown.length } });
   await presentStep(deps.present, { query: input.query, summary, sources: shown });
+
+  // Clear the stage indicator
+  await deps.present.setStatus?.("prowl-stage", undefined);
+
   return { summary, sources: synthesisInput };
 }

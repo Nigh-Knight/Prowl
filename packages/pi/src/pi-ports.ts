@@ -12,6 +12,12 @@ import type { PresenterPort, PresenterResult } from "prowl-core";
  */
 export interface PiPresenterUi {
   notify(message: string, level?: "info" | "warning" | "error"): void;
+  /**
+   * Set or clear a persistent status key in the terminal footer.
+   * Passing `undefined` as text clears the key.
+   * Pattern: ctx.ui.setStatus("status-demo", theme.fg("dim", "Ready"))
+   */
+  setStatus(key: string, text: string | undefined): void;
 }
 
 /**
@@ -20,6 +26,7 @@ export interface PiPresenterUi {
  * - `present` writes a durable, normally-styled transcript entry via
  *   `pi.appendEntry("prowl-result", ...)` — not gray/muted, not ephemeral.
  * - `progress` sends transient status to `ui.notify` (gray/muted ephemeral).
+ * - `setStatus` writes/clears a persistent footer status line via `ui.setStatus`.
  */
 export function presenterPort(
   pi: { appendEntry(customType: string, data?: unknown): void },
@@ -35,6 +42,9 @@ export function presenterPort(
     },
     async progress(message: string): Promise<void> {
       ui.notify(message, "info");
+    },
+    async setStatus(key: string, text: string | undefined): Promise<void> {
+      ui.setStatus(key, text);
     },
   };
 }

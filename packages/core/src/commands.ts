@@ -15,6 +15,7 @@ import {
   rerank as rerankStep,
   scatter as scatterStep,
   synthesize as synthesizeStep,
+  buildSynthesisPrompt,
 } from "./pipeline.ts";
 import { normalizeUrl, selectForSynthesis } from "./ranking.ts";
 import { selectForExtraction } from "./selection.ts";
@@ -104,7 +105,24 @@ export async function search(
 
   await deps.present.setStatus?.("prowl-stage", "\u270F\uFE0F Synthesizing findings\u2026");
   await deps.present.progress?.("Synthesizing findings…");
-  const summary = await synthesizeStep(deps.model, input.query, synthesisInput);
+
+  // ── SYNTHESIZE with optional streaming ──
+  // When both the model and presenter support streaming, forward incremental
+  // chunks to the presenter as they arrive. Otherwise fall back to the
+  // buffered synthesize() path.
+  let summary: string;
+  if (deps.model.generateStream && deps.present.stream) {
+    const prompt = buildSynthesisPrompt(input.query, synthesisInput);
+    const chunks: string[] = [];
+    for await (const chunk of deps.model.generateStream(prompt)) {
+      chunks.push(chunk);
+      await deps.present.stream(chunk);
+    }
+    summary = chunks.join("");
+  } else {
+    summary = await synthesizeStep(deps.model, input.query, synthesisInput);
+  }
+  // ── end streaming block ──
   const shown = selectForSynthesis(synthesisInput, 8);
   deps.debug?.({ stage: "present", detail: "rendering result", counts: { shown: shown.length } });
   await presentStep(deps.present, { query: input.query, summary, sources: shown });

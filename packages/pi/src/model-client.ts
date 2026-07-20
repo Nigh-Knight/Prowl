@@ -8,7 +8,7 @@
 // because it needs the live command context (model + registry), which only exists
 // inside the handler — not at extension load time.
 
-import { complete, type UserMessage } from "@earendil-works/pi-ai/compat";
+import { complete, stream, type UserMessage } from "@earendil-works/pi-ai/compat";
 import type { ModelPort } from "prowl-core";
 
 /**
@@ -42,9 +42,17 @@ export function modelPortFromContext(
     );
   }
 
+  const userMessageForPrompt = (prompt: string): UserMessage => ({
+    role: "user",
+    content: [{ type: "text", text: prompt }],
+    timestamp: Date.now(),
+  });
+
+  const authPromise = ctx.modelRegistry.getApiKeyAndHeaders(model);
+
   return {
     async generate(prompt: string): Promise<string> {
-      const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+      const auth = await authPromise;
       if (!auth.ok || !auth.apiKey) {
         throw new Error(
           auth.ok
@@ -53,15 +61,9 @@ export function modelPortFromContext(
         );
       }
 
-      const userMessage: UserMessage = {
-        role: "user",
-        content: [{ type: "text", text: prompt }],
-        timestamp: Date.now(),
-      };
-
       const response = await complete(
         model as never,
-        { messages: [userMessage] },
+        { messages: [userMessageForPrompt(prompt)] },
         {
           apiKey: auth.apiKey,
           headers: auth.headers,
@@ -73,6 +75,33 @@ export function modelPortFromContext(
         .filter((c): c is { type: "text"; text: string } => c.type === "text")
         .map((c) => c.text)
         .join("\n");
+    },
+
+    async *generateStream(prompt: string): AsyncIterable<string> {
+      const auth = await authPromise;
+      if (!auth.ok || !auth.apiKey) {
+        throw new Error(
+          auth.ok
+            ? `No API key configured in pi for ${model.provider}/${model.id}.`
+            : auth.error,
+        );
+      }
+
+      const eventStream = stream(
+        model as never,
+        { messages: [userMessageForPrompt(prompt)] },
+        {
+          apiKey: auth.apiKey,
+          headers: auth.headers,
+          signal: ctx.signal,
+        },
+      );
+
+      for await (const event of eventStream) {
+        if (event.type === "text_delta") {
+          yield event.delta;
+        }
+      }
     },
   };
 }

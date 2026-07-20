@@ -27,7 +27,7 @@ export async function plan(
   return { querySet: parseQueryPlan(raw, query) };
 }
 
-function buildPlanPrompt(query: string): string {
+export function buildPlanPrompt(query: string): string {
   return [
     "You are a metasearch query planner for the litter web — the",
     "non-commercial, personal, archival corners of the open web.",
@@ -127,7 +127,7 @@ export async function extract(
  * Build the bounded relevance-rerank prompt: ask the model to keep only
  * candidates that serve the query, returning a JSON array of {index, reason}.
  */
-function buildRerankPrompt(query: string, results: SearchResult[]): string {
+export function buildRerankPrompt(query: string, results: SearchResult[]): string {
   const list = results
     .map((r, i) => {
       const title = r.title || r.url;

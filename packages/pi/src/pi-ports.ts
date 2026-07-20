@@ -46,5 +46,10 @@ export function presenterPort(
     async setStatus(key: string, text: string | undefined): Promise<void> {
       ui.setStatus(key, text);
     },
+    async stream(chunk: string): Promise<void> {
+      // Forward incremental text chunks via notify for immediate visibility.
+      // Phase 5 will refine this with proper TUI streaming text append.
+      ui.notify(chunk, "info");
+    },
   };
 }

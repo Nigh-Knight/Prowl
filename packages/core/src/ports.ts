@@ -40,6 +40,13 @@ export interface FetchPort {
 /** Model-based reasoning / synthesis. */
 export interface ModelPort {
   generate(prompt: string, opts?: Record<string, unknown>): Promise<string>;
+  /**
+   * Optional streaming variant. When present, `generateStream` returns an
+   * async iterable of text chunks that the caller can forward to the presenter
+   * incrementally. Used by the SYNTHESIZE step to stream model output as it
+   * arrives (Phase 3). PLAN and RERANK remain on the buffered `generate()`.
+   */
+  generateStream?(prompt: string, opts?: Record<string, unknown>): AsyncIterable<string>;
 }
 
 /** A single site entry in the litter-web catalog. */
@@ -89,6 +96,12 @@ export interface TelemetryEvent {
   detail: string;
   counts?: Record<string, number>;
   reasons?: string[];
+  /** The prompt text sent to the model (plan prompt, rerank prompt, synthesis prompt). */
+  prompt?: string;
+  /** The raw response text received from the model. */
+  rawResponse?: string;
+  /** Raw search results for the scatter/gather stages (non-normalized). */
+  rawSearchResults?: SearchResult[];
 }
 
 /** Render final output. */
@@ -97,4 +110,16 @@ export interface PresenterPort {
   present(result: PresenterResult): Promise<void>;
   /** Optional transient progress text (e.g. "Searching…"). Bound to ui.notify. */
   progress?(message: string): Promise<void>;
+  /**
+   * Optional persistent status line key/value. Bound to ctx.ui.setStatus() for
+   * footer status during pipeline execution. Pass `undefined` as text to clear
+   * a previously-set key.
+   */
+  setStatus?(key: string, text: string | undefined): Promise<void>;
+  /**
+   * Optional streaming text update. When set, called by the SYNTHESIZE step
+   * with each incremental chunk as it arrives from the model. Implementations
+   * update the UI incrementally rather than buffering the full response.
+   */
+  stream?(chunk: string): Promise<void>;
 }

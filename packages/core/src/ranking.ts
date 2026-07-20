@@ -22,13 +22,71 @@ export function normalizeUrl(url: string): string {
 /**
  * Root (registrable) domain of a URL, used for diversity capping so that
  * `forum.example.com` and `example.com` count as one brand (Issue 3). Heuristic
- * eTLD+1: handles a small known set of multi-part suffixes (co.uk, com.au, …);
- * falls back to the last two labels. IPv4 literals and `localhost` pass through.
+ * eTLD+1: handles a known set of multi-part suffixes; falls back to the last two
+ * labels. IPv4 literals and `localhost` pass through.
  */
+// Known multi-part TLDs (eTLD+1 suffixes). Expanded from 13 to ~45 entries to
+// cover Korean, Chinese, Indian, Taiwanese, Indonesian, and other non-English
+// search result diversity (Issue 6).
 const MULTI_PART_TLDS = new Set([
-  "co.uk", "org.uk", "ac.uk", "gov.uk",
-  "com.au", "net.au", "org.au", "edu.au",
-  "co.nz", "co.jp", "com.br", "co.za", "com.mx",
+  // UK/Ireland
+  "co.uk", "org.uk", "ac.uk", "gov.uk", "ltd.uk", "me.uk", "net.uk", "plc.uk", "sch.uk",
+  // Australia
+  "com.au", "net.au", "org.au", "edu.au", "gov.au", "asn.au", "id.au",
+  // New Zealand
+  "co.nz", "net.nz", "org.nz", "ac.nz", "govt.nz",
+  // Japan
+  "co.jp", "or.jp", "ne.jp", "ac.jp", "go.jp", "ed.jp", "gr.jp",
+  // South Korea
+  "co.kr", "or.kr", "ne.kr", "go.kr", "ac.kr", "re.kr", "pe.kr",
+  // Brazil
+  "com.br", "org.br", "net.br", "gov.br", "edu.br", "mil.br", "art.br",
+  // South Africa
+  "co.za", "org.za", "net.za", "ac.za", "gov.za", "web.za",
+  // Mexico
+  "com.mx", "org.mx", "net.mx", "edu.mx", "gob.mx",
+  // China
+  "com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn", "ac.cn",
+  // India
+  "co.in", "net.in", "org.in", "ac.in", "gov.in", "firm.in", "gen.in", "ind.in",
+  // Taiwan
+  "com.tw", "org.tw", "edu.tw", "gov.tw", "net.tw", "mil.tw",
+  // Indonesia
+  "co.id", "or.id", "ac.id", "go.id", "net.id", "web.id", "sch.id",
+  // Hong Kong
+  "com.hk", "edu.hk", "gov.hk", "net.hk", "org.hk",
+  // Singapore
+  "com.sg", "edu.sg", "gov.sg", "net.sg", "org.sg",
+  // Latin America
+  "com.ar", "net.ar", "org.ar", "edu.ar", "gov.ar",
+  "com.co", "net.co", "org.co", "edu.co", "gov.co",
+  "com.pe", "net.pe", "org.pe", "edu.pe", "gob.pe",
+  // Israel
+  "co.il", "org.il", "net.il", "ac.il", "gov.il",
+  // Turkey
+  "com.tr", "org.tr", "net.tr", "edu.tr", "gov.tr", "gen.tr",
+  // Russia
+  "com.ru", "org.ru", "net.ru", "edu.ru", "gov.ru", "ac.ru",
+  // Vietnam
+  "com.vn", "net.vn", "org.vn", "edu.vn", "gov.vn",
+  // Philippines
+  "com.ph", "net.ph", "org.ph", "gov.ph", "edu.ph",
+  // Thailand
+  "co.th", "or.th", "ac.th", "go.th", "net.th", "in.th",
+  // Malaysia
+  "com.my", "net.my", "org.my", "edu.my", "gov.my",
+  // Pakistan
+  "com.pk", "net.pk", "org.pk", "edu.pk", "gov.pk",
+  // Bangladesh
+  "com.bd", "net.bd", "org.bd", "edu.bd", "gov.bd",
+  // Nigeria
+  "com.ng", "org.ng", "net.ng", "edu.ng", "gov.ng",
+  // Saudi Arabia
+  "com.sa", "net.sa", "org.sa", "edu.sa", "gov.sa",
+  // UAE
+  "co.ae", "net.ae", "org.ae", "ac.ae", "gov.ae",
+  // Egypt
+  "com.eg", "org.eg", "net.eg", "edu.eg", "gov.eg",
 ]);
 
 export function rootDomain(url: string): string {
@@ -79,16 +137,28 @@ export const LITTER_ENGINES = new Set([
   "yacy",
 ]);
 
-/** Heuristic signal score for a single result (higher = more likely useful). */
-function scoreResult(r: SearchResult): number {
+/** Heuristic signal score for a single result (higher = more likely useful).
+ *
+ * Quality floor: results with negligible snippet/title/content score below
+ * MIN_SIGNAL_SCORE (2) return 0, ensuring empty or near-empty results don't
+ * occupy synthesis slots or the diversity cap. This gates nonsense queries
+ * like `xyzzy_nonexistent_thing_12345` (Issue 5) — engines return sparse
+ * token-matching results that fail the quality floor.
+ */
+const MIN_SIGNAL_SCORE = 2;
+
+export function scoreResult(r: SearchResult): number {
   let score = 0;
-  if (r.snippet && r.snippet.length > 0) score += 2;
+  // Require meaningful snippet length (>= 20 chars) to score snippet points
+  if (r.snippet && r.snippet.length >= 20) score += 2;
   if (r.title && r.title.length > 0) score += 1;
   // Extracted evidence (read mode) should outrank snippet-only results so the
   // SYNTHESIZE context favors full content when available.
   if (r.content && r.content.trim().length > 0) score += 1;
   const engine = (r.engine ?? "").toLowerCase();
   if (LITTER_ENGINES.has(engine)) score += 1;
+  // Quality floor: negligible snippet/title/content → zero score.
+  if (score < MIN_SIGNAL_SCORE) return 0;
   return score;
 }
 

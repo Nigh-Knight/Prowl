@@ -40,6 +40,7 @@ export {
   normalizeUrl,
   rankResults,
   rootDomain,
+  scoreResult,
   selectForSynthesis,
 } from "./ranking.ts";
 export { selectForExtraction } from "./selection.ts";

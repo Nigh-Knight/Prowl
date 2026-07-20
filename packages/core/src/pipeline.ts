@@ -213,22 +213,20 @@ export function buildSynthesisPrompt(
       return `[${i + 1}] ${title}\nURL: ${r.url}\n${body}`;
     })
     .join("\n\n");
-  return [
-    "You are Prowl, a metasearch synthesizer for the litter web — the",
-    "non-commercial, personal, archival corners of the open web.",
-    "Synthesize the user's query from the result snippets below into a",
-    "concise, neutral summary (3–6 short paragraphs). Prefer personal",
-    "accounts, archives, and niche sources over SEO/commercial content.",
-    "Cite sources inline as [n] matching the numbering. Do NOT append a",
-    '"Sources:" list — the sources are rendered separately by the client.',
-    "If no snippets are provided, say you found no relevant sources; do not",
-    "answer from prior knowledge.",
-    "",
-    `Query: ${query}`,
-    "",
-    "Result snippets:",
-    sources || "(none)",
-  ].join("\n");
+  return `You are Prowl, a metasearch synthesizer for the litter web — the
+  non-commercial, personal, archival corners of the open web.
+  Synthesize the user's query from the result snippets below into a
+  concise, neutral summary (3–6 short paragraphs). Prefer personal
+  accounts, archives, and niche sources over SEO/commercial content.
+  Cite sources inline as [n] matching the numbering. Do NOT append a
+  "Sources:" list — the sources are rendered separately by the client.
+  If no snippets are provided, say you found no relevant sources; do not
+  answer from prior knowledge.
+
+  Query: ${query}
+
+  Result snippets:
+  ${sources || `(none)`}`;
 }
 
 /**
